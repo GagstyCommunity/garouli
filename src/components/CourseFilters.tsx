@@ -39,11 +39,12 @@ const CourseFilters: React.FC<CourseFiltersProps> = ({ filters, onFilterChange }
     if (filterType === 'certification') {
       newFilters.certification = !newFilters.certification;
     } else {
+      // Handle array-type filters
       const currentArray = newFilters[filterType as keyof typeof newFilters] as string[];
       if (currentArray.includes(value)) {
-        newFilters[filterType as keyof typeof newFilters] = currentArray.filter(item => item !== value);
+        (newFilters as any)[filterType] = currentArray.filter(item => item !== value);
       } else {
-        newFilters[filterType as keyof typeof newFilters] = [...currentArray, value];
+        (newFilters as any)[filterType] = [...currentArray, value];
       }
     }
     
