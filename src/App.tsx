@@ -10,6 +10,11 @@ import Courses from "./pages/Courses";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import CreateCourse from "./pages/CreateCourse";
+import CourseDetail from "./pages/CourseDetail";
+import InstructorProfile from "./pages/InstructorProfile";
+import Codex from "./pages/Codex";
+import Battle from "./pages/Battle";
+import Jobs from "./pages/Jobs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +29,11 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/courses" element={<Courses />} />
+            <Route path="/course/:slug" element={<CourseDetail />} />
+            <Route path="/instructor/:username" element={<InstructorProfile />} />
+            <Route path="/codex" element={<Codex />} />
+            <Route path="/battle" element={<Battle />} />
+            <Route path="/jobs" element={<Jobs />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/instructor/create-course" element={<CreateCourse />} />
