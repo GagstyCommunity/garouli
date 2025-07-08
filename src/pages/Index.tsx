@@ -1,9 +1,15 @@
+
 import React from 'react';
 import Navigation from '@/components/Navigation';
 import HeroSection from '@/components/HeroSection';
+import PopularCategories from '@/components/PopularCategories';
+import TrendingCourses from '@/components/TrendingCourses';
+import ExpertStory from '@/components/ExpertStory';
+import AgencySection from '@/components/AgencySection';
 import FeaturedCourses from '@/components/FeaturedCourses';
 import HowItWorks from '@/components/HowItWorks';
 import Testimonials from '@/components/Testimonials';
+import NewsletterSignup from '@/components/NewsletterSignup';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,9 +29,9 @@ import {
 const Index = () => {
   const stats = [
     { icon: Users, value: '57,000+', label: 'Active Students' },
-    { icon: BookOpen, value: '210+', label: 'Expert Courses' },
-    { icon: Award, value: '45+', label: 'Industry Partners' },
-    { icon: TrendingUp, value: '95%', label: 'Success Rate' }
+    { icon: BookOpen, value: '340+', label: 'Expert Courses' },
+    { icon: Award, value: '1,247+', label: 'Industry Experts' },
+    { icon: TrendingUp, value: '98%', label: 'Success Rate' }
   ];
 
   const features = [
@@ -51,15 +57,6 @@ const Index = () => {
     }
   ];
 
-  const categories = [
-    { name: 'Artificial Intelligence', courses: 45, color: 'bg-blue-500' },
-    { name: 'Web Development', courses: 38, color: 'bg-green-500' },
-    { name: 'Data Science', courses: 32, color: 'bg-purple-500' },
-    { name: 'DevOps & Cloud', courses: 28, color: 'bg-orange-500' },
-    { name: 'Cybersecurity', courses: 24, color: 'bg-red-500' },
-    { name: 'Mobile Development', courses: 22, color: 'bg-pink-500' }
-  ];
-
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
@@ -82,40 +79,20 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Popular Categories */}
+      <PopularCategories />
+
+      {/* Trending Courses */}
+      <TrendingCourses />
+
+      {/* Expert Story */}
+      <ExpertStory />
+
+      {/* Agency Section */}
+      <AgencySection />
+
       {/* Featured Courses */}
       <FeaturedCourses />
-
-      {/* Categories Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Popular Categories
-            </h2>
-            <p className="text-xl text-gray-600">
-              Explore our most popular course categories
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories.map((category, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow cursor-pointer">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className={`w-12 h-12 ${category.color} rounded-lg flex items-center justify-center`}>
-                      <BookOpen className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-lg">{category.name}</h3>
-                      <p className="text-gray-600">{category.courses} courses</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Features Section */}
       <section className="py-16 bg-gray-50">
@@ -150,6 +127,9 @@ const Index = () => {
 
       {/* Testimonials */}
       <Testimonials />
+
+      {/* Newsletter Signup */}
+      <NewsletterSignup />
 
       {/* CTA Section */}
       <section className="py-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
