@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import Stripe from "stripe";
 import { insertUserSchema, insertAgencySchema, insertCourseSchema, insertJobSchema, insertPracticalSchema, insertBlogPostSchema } from "@shared/schema";
-import { db } from "@server/db";
+import { db } from "./db";
 import { 
   users, agencies, courses, courseModules, quizzes, enrollments, 
   practicals, jobs, jobApplications, badges, userBadges, 
