@@ -51,6 +51,3 @@ Education is being rebuilt — not by universities, but by **tools, communities,
 
 If you’re here to learn, build, or hire — **Garouli.com** is your launchpad.
 
----
-
-Let me know if you want alternate tones (e.g. more corporate, more Gen Z, or Web3-native).
