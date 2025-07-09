@@ -837,35 +837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: error.message });
     }
   });
+
+  const server = createServer(app);
+  return server;
 }
-import { Hono } from "hono";
-import { handle } from "hono/vercel";
-import { seedDatabase } from "./seed";
-
-const app = new Hono().basePath("/api");
-
-// Seed database endpoint
-app.post("/seed", async (c) => {
-  try {
-    await seedDatabase();
-    return c.json({ 
-      success: true, 
-      message: "Database seeded successfully with comprehensive dummy data!" 
-    });
-  } catch (error) {
-    console.error("Seeding error:", error);
-    return c.json({ 
-      success: false, 
-      error: "Failed to seed database",
-      details: error instanceof Error ? error.message : "Unknown error"
-    }, 500);
-  }
-});
-
-// Health check endpoint
-app.get("/health", (c) => {
-  return c.json({ status: "healthy", timestamp: new Date().toISOString() });
-});
-
-export const runtime = "edge";
-export default handle(app);
