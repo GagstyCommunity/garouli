@@ -52,7 +52,15 @@ const Quiz: React.FC<QuizProps> = ({ moduleId, courseId, onComplete }) => {
       }
 
       if (data && data.length > 0) {
-        setQuestions(data);
+        // Transform the data to match our QuizQuestion interface
+        const transformedQuestions: QuizQuestion[] = data.map(item => ({
+          id: item.id,
+          question: item.question,
+          options: Array.isArray(item.options) ? item.options as string[] : [],
+          correct_answer: item.correct_answer,
+          explanation: item.explanation || ''
+        }));
+        setQuestions(transformedQuestions);
       } else {
         // Generate sample questions if none exist
         const sampleQuestions: QuizQuestion[] = [
