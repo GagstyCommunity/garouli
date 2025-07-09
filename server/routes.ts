@@ -13,9 +13,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  
+
   // ============= USER MANAGEMENT API =============
-  
+
   // Get user profile
   app.get("/api/users/:id", async (req, res) => {
     try {
@@ -71,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============= COURSE MANAGEMENT API =============
-  
+
   // Get all courses
   app.get("/api/courses", async (req, res) => {
     try {
@@ -151,7 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============= AGENCY MANAGEMENT API =============
-  
+
   // Get agency profile
   app.get("/api/agencies/:id", async (req, res) => {
     try {
@@ -169,10 +169,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/agencies/register", async (req, res) => {
     try {
       const { userData, agencyData, paymentMethodId } = req.body;
-      
+
       // Create user first
       const user = await storage.createUser({ ...userData, role: "agency" });
-      
+
       // Create Stripe customer
       const customer = await stripe.customers.create({
         email: user.email,
@@ -228,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============= JOB MANAGEMENT API =============
-  
+
   // Get all jobs
   app.get("/api/jobs", async (req, res) => {
     try {
@@ -286,7 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============= PRACTICAL SUBMISSIONS API =============
-  
+
   // Submit practical
   app.post("/api/practicals", async (req, res) => {
     try {
@@ -310,7 +310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============= BLOG/CMS API =============
-  
+
   // Get blog posts
   app.get("/api/blog", async (req, res) => {
     try {
@@ -358,7 +358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============= STRIPE PAYMENT API =============
-  
+
   // Create payment intent for one-time payments
   app.post("/api/create-payment-intent", async (req, res) => {
     try {
@@ -378,7 +378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { userId } = req.body;
       const user = await storage.getUser(userId);
-      
+
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -430,3 +430,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
   return httpServer;
 }
+import { Hono } from "hono";
+import { handle } from "hono/vercel";
+import { db } from "./db";
+import { seedDatabase } from "./seed";
+
+const app = new Hono().basePath("/api");
+
+// Seed database endpoint
+app.post("/seed", async (c) => {
+  try {
+    await seedDatabase();
+    return c.json({ 
+      success: true, 
+      message: "Database seeded successfully with comprehensive dummy data!" 
+    });
+  } catch (error) {
+    console.error("Seeding error:", error);
+    return c.json({ 
+      success: false, 
+      error: "Failed to seed database",
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, 500);
+  }
+});
+
+// Health check endpoint
+app.get("/health", (c) => {
+  return c.json({ status: "healthy", timestamp: new Date().toISOString() });
+});
+
+export const runtime = "edge";
+export default handle(app);
