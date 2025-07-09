@@ -10,6 +10,10 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookOpen, Trophy, Star, Clock, Target, Award, Code, ExternalLink, Calendar, Flame, Users, TrendingUp } from 'lucide-react';
 import { Link } from 'wouter';
+import LearningCompetitions from '@/components/LearningCompetitions';
+import StudyGroups from '@/components/StudyGroups';
+import VoiceAssistant from '@/components/VoiceAssistant';
+import IntegrationMarketplace from '@/components/IntegrationMarketplace';
 
 interface StudentDashboardProps {
   isEnterprise?: boolean;
@@ -162,12 +166,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ isEnterprise = fals
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="courses">My Courses</TabsTrigger>
+          <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="practicals">Practicals</TabsTrigger>
-          <TabsTrigger value="certifications">Certifications</TabsTrigger>
-          <TabsTrigger value="recommended">Recommended</TabsTrigger>
+          <TabsTrigger value="competitions">Compete</TabsTrigger>
+          <TabsTrigger value="study-groups">Groups</TabsTrigger>
+          <TabsTrigger value="voice">Voice</TabsTrigger>
+          <TabsTrigger value="integrations">Connect</TabsTrigger>
+          <TabsTrigger value="recommended">Discover</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -370,6 +377,26 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ isEnterprise = fals
               </div>
             )}
           </div>
+        </TabsContent>
+
+        {/* Competitions Tab */}
+        <TabsContent value="competitions" className="space-y-6">
+          <LearningCompetitions />
+        </TabsContent>
+
+        {/* Study Groups Tab */}
+        <TabsContent value="study-groups" className="space-y-6">
+          <StudyGroups />
+        </TabsContent>
+
+        {/* Voice Assistant Tab */}
+        <TabsContent value="voice" className="space-y-6">
+          <VoiceAssistant />
+        </TabsContent>
+
+        {/* Integrations Tab */}
+        <TabsContent value="integrations" className="space-y-6">
+          <IntegrationMarketplace />
         </TabsContent>
 
         {/* Recommended Tab */}

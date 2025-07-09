@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
 import { useToast } from '@/hooks/use-toast';
+import CodePlayground from '@/components/CodePlayground';
 
 const CourseDetail = () => {
   const { slug } = useParams();
@@ -274,7 +275,7 @@ const CourseDetail = () => {
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-                <TabsTrigger value="instructor">Instructor</TabsTrigger>
+                <TabsTrigger value="playground">Code Lab</TabsTrigger>
                 <TabsTrigger value="reviews">Reviews</TabsTrigger>
               </TabsList>
 
@@ -367,44 +368,51 @@ const CourseDetail = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="instructor">
-                {instructor && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>About the Instructor</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-start space-x-4">
-                        <Avatar className="h-16 w-16">
-                          <AvatarFallback className="text-2xl">
-                            {instructor.full_name?.charAt(0) || 'I'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="text-xl font-semibold mb-2">{instructor.full_name}</h3>
-                          <p className="text-gray-600 mb-4">{instructor.bio}</p>
-                          <div className="flex items-center space-x-6 text-sm text-gray-500">
-                            <div className="flex items-center space-x-1">
-                              <Users className="h-4 w-4" />
-                              <span>1,234 students</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <BookOpen className="h-4 w-4" />
-                              <span>5 courses</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-4 w-4" />
-                              <span>4.8 rating</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
+              <TabsContent value="playground" className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
+                <CodePlayground 
+                  language="javascript"
+                  initialCode={`// Practice JavaScript concepts from this course
+function calculateGrade(score) {
+  if (score >= 90) return 'A';
+  if (score >= 80) return 'B';
+  if (score >= 70) return 'C';
+  if (score >= 60) return 'D';
+  return 'F';
+}
 
-              <TabsContent value="reviews">
+// Test your function
+console.log(calculateGrade(85)); // Should output: B
+console.log(calculateGrade(92)); // Should output: A
+
+// Try modifying the function or add your own code below:`}
+                />
+                <CodePlayground 
+                  language="python"
+                  initialCode={`# Practice Python concepts from this course
+def fibonacci(n):
+    """Generate Fibonacci sequence up to n terms"""
+    if n <= 0:
+        return []
+    elif n == 1:
+        return [0]
+    elif n == 2:
+        return [0, 1]
+
+    sequence = [0, 1]
+    for i in range(2, n):
+        sequence.append(sequence[i-1] + sequence[i-2])
+    return sequence
+
+# Test your function
+print(fibonacci(10))  # Should output first 10 Fibonacci numbers
+
+# Try creating your own functions below:`}
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="reviews" className="space-y-6">
                 <Card>
                   <CardHeader>
                     <CardTitle>Student Reviews</CardTitle>
