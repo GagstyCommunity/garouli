@@ -3,6 +3,14 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import Stripe from "stripe";
 import { insertUserSchema, insertAgencySchema, insertCourseSchema, insertJobSchema, insertPracticalSchema, insertBlogPostSchema } from "@shared/schema";
+import { db } from "@server/db";
+import { 
+  users, agencies, courses, courseModules, quizzes, enrollments, 
+  practicals, jobs, jobApplications, badges, userBadges, 
+  courseReviews, contributorTasks, blogPosts 
+} from "@shared/schema";
+import { eq, desc, asc, like, and } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -13,6 +21,409 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+
+  // Basic health check
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Auth routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+      if (user.length === 0) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const isValid = await bcrypt.compare(password, user[0].password);
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      const { password: _, ...userWithoutPassword } = user[0];
+      res.json({ user: userWithoutPassword });
+    } catch (error) {
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { email, username, password, firstName, lastName, role = 'learner' } = req.body;
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const newUser = await db.insert(users).values({
+        email,
+        username,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        role,
+        referralCode: `${username.toUpperCase()}${Math.random().toString(36).substr(2, 3)}`
+      }).returning();
+
+      const { password: _, ...userWithoutPassword } = newUser[0];
+      res.status(201).json({ user: userWithoutPassword });
+    } catch (error) {
+      res.status(500).json({ error: "Registration failed" });
+    }
+  });
+
+  // Users routes
+  app.get("/api/users", async (req, res) => {
+    try {
+      const allUsers = await db.select({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        role: users.role,
+        avatar: users.avatar,
+        bio: users.bio,
+        country: users.country,
+        xpPoints: users.xpPoints,
+        level: users.level,
+        streak: users.streak,
+        isVerified: users.isVerified,
+        createdAt: users.createdAt
+      }).from(users);
+      res.json(allUsers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.get("/api/users/:id", async (req, res) => {
+    try {
+      const user = await db.select().from(users).where(eq(users.id, parseInt(req.params.id))).limit(1);
+      if (user.length === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      const { password: _, ...userWithoutPassword } = user[0];
+      res.json(userWithoutPassword);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user" });
+    }
+  });
+
+  // Courses routes
+  app.get("/api/courses", async (req, res) => {
+    try {
+      const { category, level, search } = req.query;
+      let query = db.select().from(courses);
+
+      if (category) {
+        query = query.where(eq(courses.category, category as string));
+      }
+      if (level) {
+        query = query.where(eq(courses.level, level as string));
+      }
+      if (search) {
+        query = query.where(like(courses.title, `%${search}%`));
+      }
+
+      const allCourses = await query.orderBy(desc(courses.totalEnrollments));
+      res.json(allCourses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch courses" });
+    }
+  });
+
+  app.get("/api/courses/:id", async (req, res) => {
+    try {
+      const course = await db.select().from(courses).where(eq(courses.id, parseInt(req.params.id))).limit(1);
+      if (course.length === 0) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+
+      // Get course modules
+      const modules = await db.select().from(courseModules)
+        .where(eq(courseModules.courseId, parseInt(req.params.id)))
+        .orderBy(asc(courseModules.orderIndex));
+
+      // Get course reviews
+      const reviews = await db.select().from(courseReviews)
+        .where(eq(courseReviews.courseId, parseInt(req.params.id)))
+        .orderBy(desc(courseReviews.createdAt));
+
+      res.json({ ...course[0], modules, reviews });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch course" });
+    }
+  });
+
+  // Enrollments routes
+  app.get("/api/enrollments/user/:userId", async (req, res) => {
+    try {
+      const userEnrollments = await db.select().from(enrollments)
+        .where(eq(enrollments.userId, parseInt(req.params.userId)));
+      res.json(userEnrollments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch enrollments" });
+    }
+  });
+
+  app.post("/api/enrollments", async (req, res) => {
+    try {
+      const { userId, courseId } = req.body;
+      const newEnrollment = await db.insert(enrollments).values({
+        userId,
+        courseId,
+        progress: 0
+      }).returning();
+      res.status(201).json(newEnrollment[0]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create enrollment" });
+    }
+  });
+
+  // Jobs routes
+  app.get("/api/jobs", async (req, res) => {
+    try {
+      const { type, remote, experience } = req.query;
+      let query = db.select().from(jobs);
+
+      if (type) {
+        query = query.where(eq(jobs.type, type as string));
+      }
+      if (remote !== undefined) {
+        query = query.where(eq(jobs.remote, remote === 'true'));
+      }
+      if (experience) {
+        query = query.where(eq(jobs.experience, experience as string));
+      }
+
+      const allJobs = await query.where(eq(jobs.status, 'active')).orderBy(desc(jobs.postedAt));
+      res.json(allJobs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch jobs" });
+    }
+  });
+
+  app.get("/api/jobs/:id", async (req, res) => {
+    try {
+      const job = await db.select().from(jobs).where(eq(jobs.id, parseInt(req.params.id))).limit(1);
+      if (job.length === 0) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      res.json(job[0]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch job" });
+    }
+  });
+
+  // Job applications routes
+  app.post("/api/job-applications", async (req, res) => {
+    try {
+      const { jobId, userId, resume, coverLetter, portfolio } = req.body;
+      const newApplication = await db.insert(jobApplications).values({
+        jobId,
+        userId,
+        resume,
+        coverLetter,
+        portfolio,
+        status: 'pending'
+      }).returning();
+      res.status(201).json(newApplication[0]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to submit application" });
+    }
+  });
+
+  // Practicals routes
+  app.get("/api/practicals", async (req, res) => {
+    try {
+      const { userId, courseId, featured } = req.query;
+      let query = db.select().from(practicals);
+
+      if (userId) {
+        query = query.where(eq(practicals.userId, parseInt(userId as string)));
+      }
+      if (courseId) {
+        query = query.where(eq(practicals.courseId, parseInt(courseId as string)));
+      }
+      if (featured === 'true') {
+        query = query.where(eq(practicals.isFeatured, true));
+      }
+
+      const allPracticals = await query.orderBy(desc(practicals.submittedAt));
+      res.json(allPracticals);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch practicals" });
+    }
+  });
+
+  app.post("/api/practicals", async (req, res) => {
+    try {
+      const { userId, courseId, moduleId, title, description, submissionUrl, githubUrl } = req.body;
+      const newPractical = await db.insert(practicals).values({
+        userId,
+        courseId,
+        moduleId,
+        title,
+        description,
+        submissionUrl,
+        githubUrl,
+        status: 'submitted',
+        isUrlValid: true
+      }).returning();
+      res.status(201).json(newPractical[0]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to submit practical" });
+    }
+  });
+
+  // Badges routes
+  app.get("/api/badges", async (req, res) => {
+    try {
+      const allBadges = await db.select().from(badges).where(eq(badges.isActive, true));
+      res.json(allBadges);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch badges" });
+    }
+  });
+
+  app.get("/api/user-badges/:userId", async (req, res) => {
+    try {
+      const userBadgesList = await db.select().from(userBadges)
+        .where(eq(userBadges.userId, parseInt(req.params.userId)));
+      res.json(userBadgesList);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user badges" });
+    }
+  });
+
+  // Blog routes
+  app.get("/api/blog", async (req, res) => {
+    try {
+      const { category, featured } = req.query;
+      let query = db.select().from(blogPosts);
+
+      if (category) {
+        query = query.where(eq(blogPosts.category, category as string));
+      }
+      if (featured === 'true') {
+        query = query.where(eq(blogPosts.isSticky, true));
+      }
+
+      const posts = await query.where(eq(blogPosts.status, 'published'))
+        .orderBy(desc(blogPosts.publishedAt));
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch blog posts" });
+    }
+  });
+
+  app.get("/api/blog/:slug", async (req, res) => {
+    try {
+      const post = await db.select().from(blogPosts)
+        .where(and(eq(blogPosts.slug, req.params.slug), eq(blogPosts.status, 'published')))
+        .limit(1);
+
+      if (post.length === 0) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+
+      // Increment view count
+      await db.update(blogPosts)
+        .set({ viewCount: post[0].viewCount + 1 })
+        .where(eq(blogPosts.id, post[0].id));
+
+      res.json(post[0]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch blog post" });
+    }
+  });
+
+  // Contributor tasks routes
+  app.get("/api/contributor-tasks", async (req, res) => {
+    try {
+      const { status, type } = req.query;
+      let query = db.select().from(contributorTasks);
+
+      if (status) {
+        query = query.where(eq(contributorTasks.status, status as string));
+      }
+      if (type) {
+        query = query.where(eq(contributorTasks.type, type as string));
+      }
+
+      const tasks = await query.orderBy(desc(contributorTasks.createdAt));
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch contributor tasks" });
+    }
+  });
+
+  // Agencies routes
+  app.get("/api/agencies", async (req, res) => {
+    try {
+      const allAgencies = await db.select().from(agencies);
+      res.json(allAgencies);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch agencies" });
+    }
+  });
+
+  // Course reviews routes
+  app.post("/api/course-reviews", async (req, res) => {
+    try {
+      const { courseId, userId, rating, review } = req.body;
+      const newReview = await db.insert(courseReviews).values({
+        courseId,
+        userId,
+        rating,
+        review: review,
+        isVerified: false
+      }).returning();
+      res.status(201).json(newReview[0]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to submit review" });
+    }
+  });
+
+  // Dashboard stats
+  app.get("/api/dashboard/stats/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+
+      // Get user enrollments
+      const userEnrollments = await db.select().from(enrollments)
+        .where(eq(enrollments.userId, userId));
+
+      // Get user practicals
+      const userPracticals = await db.select().from(practicals)
+        .where(eq(practicals.userId, userId));
+
+      // Get user badges
+      const userBadgesList = await db.select().from(userBadges)
+        .where(eq(userBadges.userId, userId));
+
+      // Get user data
+      const user = await db.select().from(users)
+        .where(eq(users.id, userId)).limit(1);
+
+      const stats = {
+        totalCourses: userEnrollments.length,
+        completedCourses: userEnrollments.filter(e => e.progress === 100).length,
+        totalXP: user[0]?.xpPoints || 0,
+        currentLevel: user[0]?.level || 1,
+        streak: user[0]?.streak || 0,
+        practicalSubmissions: userPracticals.length,
+        badgesEarned: userBadgesList.length,
+        averageProgress: userEnrollments.length > 0 
+          ? Math.round(userEnrollments.reduce((sum, e) => sum + e.progress, 0) / userEnrollments.length)
+          : 0
+      };
+
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch dashboard stats" });
+    }
+  });
 
   // ============= USER MANAGEMENT API =============
 
@@ -426,13 +837,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: error.message });
     }
   });
-
-  const httpServer = createServer(app);
-  return httpServer;
 }
 import { Hono } from "hono";
 import { handle } from "hono/vercel";
-import { db } from "./db";
 import { seedDatabase } from "./seed";
 
 const app = new Hono().basePath("/api");
