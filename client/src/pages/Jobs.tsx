@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +16,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
 
 const Jobs = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -143,7 +143,7 @@ const Jobs = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white py-16">
         <div className="container mx-auto px-4">
@@ -152,7 +152,7 @@ const Jobs = () => {
             <p className="text-xl mb-8 opacity-90">
               Discover opportunities in AI, tech, and automation from top companies
             </p>
-            
+
             <div className="max-w-2xl mx-auto">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -264,7 +264,7 @@ const Jobs = () => {
                       </CardHeader>
                       <CardContent>
                         <p className="text-gray-700 mb-4">{job.description}</p>
-                        
+
                         <div className="flex flex-wrap gap-2 mb-4">
                           {job.skills.map((skill, index) => (
                             <Badge key={index} variant="secondary">
@@ -272,7 +272,7 @@ const Jobs = () => {
                             </Badge>
                           ))}
                         </div>
-                        
+
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4 text-sm text-gray-600">
                             <div className="flex items-center space-x-1">
@@ -325,7 +325,7 @@ const Jobs = () => {
                             </span>
                           </div>
                           <p className="text-gray-700 mb-4">{job.description}</p>
-                          
+
                           <div className="flex flex-wrap gap-2 mb-4">
                             {job.skills.map((skill, index) => (
                               <Badge key={index} variant="secondary">
@@ -333,7 +333,7 @@ const Jobs = () => {
                               </Badge>
                             ))}
                           </div>
-                          
+
                           <div className="flex items-center space-x-4 text-sm text-gray-600">
                             <div className="flex items-center space-x-1">
                               <DollarSign className="h-4 w-4" />
@@ -370,6 +370,7 @@ const Jobs = () => {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

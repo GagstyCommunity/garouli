@@ -162,7 +162,7 @@ const Blog: React.FC = () => {
 
         setPosts(mockPosts);
         setFeaturedPosts(mockPosts.filter(post => post.featured));
-        
+
         // Extract unique categories
         const uniqueCategories = Array.from(new Set(mockPosts.map(post => post.category)));
         setCategories(['All', ...uniqueCategories]);
@@ -254,7 +254,7 @@ const Blog: React.FC = () => {
                         <h3 className="text-xl font-bold line-clamp-2 mb-2">{post.title}</h3>
                         <p className="text-muted-foreground line-clamp-3">{post.excerpt}</p>
                       </div>
-                      
+
                       <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                         <div className="flex items-center space-x-2">
                           <Avatar className="h-6 w-6">
@@ -347,7 +347,7 @@ const Blog: React.FC = () => {
                       <h3 className="text-lg font-semibold line-clamp-2 mb-2">{post.title}</h3>
                       <p className="text-muted-foreground text-sm line-clamp-3">{post.excerpt}</p>
                     </div>
-                    
+
                     <div className="flex items-center space-x-3 text-sm text-muted-foreground">
                       <div className="flex items-center space-x-2">
                         <Avatar className="h-5 w-5">

@@ -11,6 +11,8 @@ import {
   CheckCircle, Calendar, Briefcase, BookOpen, Award
 } from 'lucide-react';
 import { Link } from 'wouter';
+import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
 
 const Contribute: React.FC = () => {
   const [availableTasks, setAvailableTasks] = useState<any[]>([]);
@@ -129,6 +131,7 @@ const Contribute: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navigation />
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-20">
         <div className="container mx-auto px-4 text-center">
@@ -235,7 +238,7 @@ const Contribute: React.FC = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <p className="text-muted-foreground line-clamp-3">{task.description}</p>
-                  
+
                   <div className="flex flex-wrap gap-2">
                     {task.skills.map((skill: string, index: number) => (
                       <Badge key={index} variant="secondary" className="text-xs">
@@ -300,7 +303,7 @@ const Contribute: React.FC = () => {
                         </div>
                         <Badge variant="default">{job.type}</Badge>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
                           <span className="text-sm text-muted-foreground">Location</span>
@@ -446,6 +449,7 @@ const Contribute: React.FC = () => {
           <TaskApplicationForm task={selectedTask} onClose={() => setShowApplicationDialog(false)} />
         </DialogContent>
       </Dialog>
+      <Footer />
     </div>
   );
 };
@@ -479,7 +483,7 @@ const TaskApplicationForm: React.FC<{ task: any; onClose: () => void }> = ({ tas
           required
         />
       </div>
-      
+
       <div>
         <Label htmlFor="portfolio">Portfolio Links</Label>
         <Input

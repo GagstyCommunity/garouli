@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -132,7 +131,7 @@ const Codex = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-16">
         <div className="container mx-auto px-4">
@@ -141,7 +140,7 @@ const Codex = () => {
             <p className="text-xl mb-8 opacity-90">
               Your ultimate learning hub for AI, automation, and modern technology
             </p>
-            
+
             <div className="max-w-2xl mx-auto">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />

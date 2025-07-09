@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +20,7 @@ import {
   Crown
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
 
 const Battle = () => {
   const [promptText, setPromptText] = useState('');
@@ -111,7 +111,7 @@ const Battle = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white py-16">
         <div className="container mx-auto px-4">
@@ -168,7 +168,7 @@ const Battle = () => {
                         </div>
                         <Badge variant="outline">{battle.difficulty}</Badge>
                       </div>
-                      
+
                       <div className="flex items-center space-x-4 text-sm text-gray-600">
                         <div className="flex items-center space-x-1">
                           <Users className="h-4 w-4" />
@@ -274,11 +274,11 @@ const Battle = () => {
                         <Award className="h-5 w-5 text-blue-500" />
                         <span className="font-semibold">Winner: {winner.winner}</span>
                       </div>
-                      
+
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <p className="text-sm italic">"{winner.prompt}"</p>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <ThumbsUp className="h-4 w-4 text-green-500" />
@@ -346,6 +346,7 @@ const Battle = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <Footer />
     </div>
   );
 };

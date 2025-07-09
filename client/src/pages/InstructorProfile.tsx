@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +18,7 @@ import {
   Clock
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
 
 const InstructorProfile = () => {
   const { username } = useParams();
@@ -98,6 +98,7 @@ const InstructorProfile = () => {
             <div className="h-4 bg-gray-200 rounded w-1/2"></div>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -114,6 +115,7 @@ const InstructorProfile = () => {
             </Button>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -121,7 +123,7 @@ const InstructorProfile = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
@@ -130,11 +132,11 @@ const InstructorProfile = () => {
                 {instructor.full_name?.charAt(0) || 'I'}
               </AvatarFallback>
             </Avatar>
-            
+
             <div className="text-center md:text-left">
               <h1 className="text-4xl font-bold mb-2">{instructor.full_name}</h1>
               <p className="text-xl text-blue-100 mb-4">{instructor.bio}</p>
-              
+
               <div className="flex flex-wrap justify-center md:justify-start gap-6 mb-6">
                 <div className="flex items-center space-x-2">
                   <Star className="h-5 w-5 text-yellow-400 fill-current" />
@@ -226,7 +228,7 @@ const InstructorProfile = () => {
                   <p className="text-gray-700 leading-relaxed mb-6">
                     {instructor.bio || "This instructor hasn't provided a detailed bio yet."}
                   </p>
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-center space-x-3">
                       <MapPin className="h-5 w-5 text-gray-400" />
@@ -295,7 +297,7 @@ const InstructorProfile = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start space-x-4">
                     <Avatar>
                       <AvatarFallback>MJ</AvatarFallback>
@@ -320,6 +322,7 @@ const InstructorProfile = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <Footer />
     </div>
   );
 };

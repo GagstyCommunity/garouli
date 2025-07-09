@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -154,7 +153,7 @@ const CourseDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="bg-gray-900 text-white py-12">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -219,7 +218,7 @@ const CourseDetail = () => {
                   <div className="aspect-video bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
                     <Play className="h-16 w-16 text-gray-400" />
                   </div>
-                  
+
                   <div className="text-center mb-6">
                     {course.is_free ? (
                       <div className="text-3xl font-bold text-green-600">Free</div>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
 import { ArrowLeft, Save, Eye } from 'lucide-react';
 
 const CreateCourse = () => {
@@ -107,7 +107,7 @@ const CreateCourse = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center space-x-4 mb-8">
@@ -292,6 +292,7 @@ const CreateCourse = () => {
           </Card>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

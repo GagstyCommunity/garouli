@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Navigation from '@/components/Navigation';
@@ -104,7 +103,7 @@ const Courses = () => {
       }
 
       const { data, error } = await query;
-      
+
       if (error) throw error;
       setCourses(data || []);
     } catch (error) {
@@ -147,7 +146,7 @@ const Courses = () => {
           )}
         </div>
       </div>
-      
+
       <CardContent className={`p-6 ${isListView ? 'flex-1' : ''}`}>
         <div className="flex items-start justify-between mb-3">
           <h3 className="font-semibold text-lg line-clamp-2 hover:text-blue-600 cursor-pointer">
@@ -158,11 +157,11 @@ const Courses = () => {
             <span className="text-sm font-medium">{course.rating || '4.5'}</span>
           </div>
         </div>
-        
+
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">
           {course.short_description || course.description}
         </p>
-        
+
         <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1">
@@ -180,7 +179,7 @@ const Courses = () => {
             </Badge>
           )}
         </div>
-        
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
@@ -190,7 +189,7 @@ const Courses = () => {
               {course.profiles?.full_name || 'Instructor'}
             </span>
           </div>
-          
+
           <Button size="sm" className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700">
             {course.is_free ? 'Enroll Free' : `$${course.price}`}
           </Button>
@@ -202,7 +201,7 @@ const Courses = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-      
+
       {/* Header */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-8">
@@ -215,7 +214,7 @@ const Courses = () => {
                 Learn from 1,000+ industry experts. No payment required.
               </p>
             </div>
-            
+
             {/* Search Bar */}
             <div className="relative max-w-md w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
