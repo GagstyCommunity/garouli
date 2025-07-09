@@ -16,6 +16,8 @@ import Codex from "./pages/Codex";
 import Battle from "./pages/Battle";
 import Jobs from "./pages/Jobs";
 import AgencySignup from "./pages/AgencySignup";
+import Blog from "./pages/Blog";
+import Contribute from "./pages/Contribute";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +42,8 @@ const App = () => (
             <Route path="/instructor/create-course" element={<CreateCourse />} />
             <Route path="/agency-signup" element={<AgencySignup />} />
             <Route path="/claim" element={<AgencySignup />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/contribute" element={<Contribute />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

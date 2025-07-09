@@ -20,8 +20,8 @@ import {
   Filter,
   Download
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiRequest } from '@/lib/queryClient';
 
 interface AdminStats {
   totalUsers: number;
@@ -54,39 +54,27 @@ const EnhancedAdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch users with roles
-      const { data: usersData } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          user_roles(role)
-        `);
-
-      // Fetch courses with approval status
-      const { data: coursesData } = await supabase
-        .from('courses')
-        .select(`
-          *,
-          profiles(full_name)
-        `);
-
-      // Fetch agency subscriptions
-      const { data: subscriptionsData } = await supabase
-        .from('agency_subscriptions')
-        .select('*');
+      // Fetch users
+      const usersData = await apiRequest('GET', '/api/users');
+      
+      // Fetch courses
+      const coursesData = await apiRequest('GET', '/api/courses');
+      
+      // Fetch agencies
+      const agenciesData = await apiRequest('GET', '/api/agencies');
 
       setUsers(usersData || []);
       setCourses(coursesData || []);
-      setAgencies(subscriptionsData || []);
+      setAgencies(agenciesData || []);
 
       // Calculate stats
       const adminStats: AdminStats = {
         totalUsers: usersData?.length || 0,
         totalCourses: coursesData?.length || 0,
-        totalAgencies: subscriptionsData?.length || 0,
-        totalRevenue: subscriptionsData?.reduce((sum, sub) => sum + (sub.annual_fee || 0), 0) || 0,
-        pendingApprovals: coursesData?.filter(course => !course.is_published).length || 0,
-        activeSubscriptions: subscriptionsData?.filter(sub => sub.status === 'active').length || 0
+        totalAgencies: agenciesData?.length || 0,
+        totalRevenue: agenciesData?.reduce((sum: number, agency: any) => sum + (agency.annual_fee || 0), 0) || 0,
+        pendingApprovals: coursesData?.filter((course: any) => !course.is_published).length || 0,
+        activeSubscriptions: agenciesData?.filter((agency: any) => agency.status === 'active').length || 0
       };
 
       setStats(adminStats);
@@ -100,31 +88,18 @@ const EnhancedAdminDashboard = () => {
   const handleApprovalAction = async (type: 'course' | 'user', id: string, action: 'approve' | 'reject') => {
     try {
       if (type === 'course') {
-        await supabase
-          .from('courses')
-          .update({ is_published: action === 'approve' })
-          .eq('id', id);
+        await apiRequest('PATCH', `/api/courses/${id}`, {
+          is_published: action === 'approve',
+          approval_status: action === 'approve' ? 'approved' : 'rejected'
+        });
+        
+        // Refresh courses data
+        fetchDashboardData();
       }
-      
-      // Refresh data
-      fetchDashboardData();
     } catch (error) {
-      console.error('Error updating approval:', error);
+      console.error('Error handling approval:', error);
     }
   };
-
-  const exportData = (type: 'users' | 'courses' | 'revenue') => {
-    // Implement data export functionality
-    console.log(`Exporting ${type} data...`);
-  };
-
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="text-center">Loading admin dashboard...</div>
-      </div>
-    );
-  }
 
   const filteredUsers = users.filter(user => 
     user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -132,304 +107,384 @@ const EnhancedAdminDashboard = () => {
   );
 
   const filteredCourses = courses.filter(course =>
-    course.title?.toLowerCase().includes(searchTerm.toLowerCase())
+    course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.category?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-muted rounded w-1/3"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-32 bg-muted rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Admin Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card>
+    <div className="container mx-auto px-4 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <p className="text-muted-foreground">Manage platform operations and monitor performance</p>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <div className="text-2xl font-bold text-blue-600">{stats.totalUsers.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Active platform users</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Courses</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalCourses}</div>
+            <div className="text-2xl font-bold text-green-600">{stats.totalCourses.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">{stats.pendingApprovals} pending approval</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Agencies</CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
-            <p className="text-xs text-muted-foreground">of {stats.totalAgencies} total</p>
+            <div className="text-2xl font-bold text-purple-600">{stats.activeSubscriptions}</div>
+            <p className="text-xs text-muted-foreground">{stats.totalAgencies} total agencies</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-orange-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${(stats.totalRevenue / 12).toFixed(0)}</div>
-            <p className="text-xs text-muted-foreground">Annual: ${stats.totalRevenue}</p>
+            <div className="text-2xl font-bold text-orange-600">${stats.totalRevenue.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">From agency subscriptions</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-red-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
-            <p className="text-xs text-muted-foreground">Requires attention</p>
+            <div className="text-2xl font-bold text-red-600">{stats.pendingApprovals}</div>
+            <p className="text-xs text-muted-foreground">Require review</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-indigo-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Platform Growth</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+24%</div>
-            <p className="text-xs text-muted-foreground">User acquisition</p>
+            <div className="text-2xl font-bold text-indigo-600">+12.5%</div>
+            <p className="text-xs text-muted-foreground">Monthly growth rate</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Management Tabs */}
-      <Tabs defaultValue="users" className="space-y-4">
-        <TabsList>
+      {/* Main Content */}
+      <Tabs defaultValue="users" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="users">User Management</TabsTrigger>
-          <TabsTrigger value="courses">Course Approval</TabsTrigger>
+          <TabsTrigger value="courses">Course Moderation</TabsTrigger>
           <TabsTrigger value="agencies">Agency Management</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="settings">Site Settings</TabsTrigger>
         </TabsList>
 
         {/* Users Tab */}
-        <TabsContent value="users" className="space-y-4">
+        <TabsContent value="users" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">User Management</h2>
+            <div className="flex space-x-2">
+              <div className="relative">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search users..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
+              <Button variant="outline">
+                <Filter className="h-4 w-4 mr-2" />
+                Filter
+              </Button>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </div>
+          </div>
+
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>User Management</CardTitle>
-                  <CardDescription>Manage all platform users and their roles</CardDescription>
-                </div>
-                <Button onClick={() => exportData('users')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </div>
-              <div className="flex gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search users..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.slice(0, 10).map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{user.full_name || 'No name'}</div>
+                        <div className="text-sm text-muted-foreground">{user.email}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {user.user_roles?.[0]?.role || 'student'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.email_confirmed_at ? 'default' : 'secondary'}>
+                        {user.email_confirmed_at ? 'Active' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          Edit
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.user_roles?.[0]?.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.user_roles?.[0]?.role || 'student'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">Active</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button size="sm" variant="outline">Edit</Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
+                ))}
+              </TableBody>
+            </Table>
           </Card>
         </TabsContent>
 
         {/* Courses Tab */}
-        <TabsContent value="courses" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Course Approval</CardTitle>
-                  <CardDescription>Review and approve courses before publication</CardDescription>
-                </div>
-                <Button onClick={() => exportData('courses')}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
+        <TabsContent value="courses" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Course Moderation</h2>
+            <div className="flex space-x-2">
+              <div className="relative">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search courses..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
+                />
               </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Course Title</TableHead>
-                    <TableHead>Instructor</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCourses.map((course) => (
-                    <TableRow key={course.id}>
-                      <TableCell className="font-medium">{course.title}</TableCell>
-                      <TableCell>{course.profiles?.full_name || 'Unknown'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{course.category}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={course.is_published ? 'default' : 'secondary'}>
-                          {course.is_published ? 'Published' : 'Pending'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleApprovalAction('course', course.id, 'approve')}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleApprovalAction('course', course.id, 'reject')}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+              <Button variant="outline">
+                <Filter className="h-4 w-4 mr-2" />
+                Filter by Status
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCourses.map((course) => (
+              <Card key={course.id} className="overflow-hidden">
+                <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 relative">
+                  <div className="absolute top-2 right-2">
+                    <Badge variant={course.is_published ? 'default' : 'secondary'}>
+                      {course.is_published ? 'Published' : 'Pending'}
+                    </Badge>
+                  </div>
+                </div>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div>
+                      <h3 className="font-semibold line-clamp-2">{course.title}</h3>
+                      <p className="text-sm text-muted-foreground">{course.category}</p>
+                      <p className="text-sm text-muted-foreground">
+                        by {course.profiles?.full_name || 'Unknown'}
+                      </p>
+                    </div>
+                    
+                    <div className="text-sm">
+                      <div className="flex justify-between">
+                        <span>Created:</span>
+                        <span>{new Date(course.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    {!course.is_published && (
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprovalAction('course', course.id, 'approve')}
+                          className="flex-1"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleApprovalAction('course', course.id, 'reject')}
+                          className="flex-1"
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+
+                    {course.is_published && (
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline" className="flex-1">
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          Edit
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
 
         {/* Agencies Tab */}
-        <TabsContent value="agencies" className="space-y-4">
+        <TabsContent value="agencies" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold">Agency Management</h2>
+            <Button variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Export Data
+            </Button>
+          </div>
+
           <Card>
-            <CardHeader>
-              <CardTitle>Agency Management</CardTitle>
-              <CardDescription>Manage agency subscriptions and billing</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Agency</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Revenue</TableHead>
-                    <TableHead>Actions</TableHead>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Agency</TableHead>
+                  <TableHead>Subscription</TableHead>
+                  <TableHead>Annual Fee</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {agencies.map((agency) => (
+                  <TableRow key={agency.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{agency.company_name}</div>
+                        <div className="text-sm text-muted-foreground">{agency.contact_email}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{agency.subscription_tier}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-medium">${agency.annual_fee?.toLocaleString()}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={agency.status === 'active' ? 'default' : 'secondary'}>
+                        {agency.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          Edit
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {agencies.map((agency) => (
-                    <TableRow key={agency.id}>
-                      <TableCell className="font-medium">Agency #{agency.id.slice(0, 8)}</TableCell>
-                      <TableCell>
-                        <Badge variant={agency.status === 'active' ? 'default' : 'secondary'}>
-                          {agency.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>Annual Plan</TableCell>
-                      <TableCell>${agency.annual_fee}</TableCell>
-                      <TableCell>
-                        <Button size="sm" variant="outline">Manage</Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
+                ))}
+              </TableBody>
+            </Table>
           </Card>
         </TabsContent>
 
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-4">
+        {/* Settings Tab */}
+        <TabsContent value="settings" className="space-y-6">
+          <h2 className="text-2xl font-bold">Site Settings</h2>
+          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>User Growth</CardTitle>
+                <CardTitle>Platform Configuration</CardTitle>
+                <CardDescription>General platform settings</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center text-gray-500">
-                  Chart placeholder - User registration over time
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Site Name</label>
+                  <Input defaultValue="Minutely AI Academy" />
                 </div>
+                <div>
+                  <label className="text-sm font-medium">Contact Email</label>
+                  <Input defaultValue="admin@minutely.ai" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Maintenance Mode</label>
+                  <div className="flex items-center space-x-2">
+                    <input type="checkbox" id="maintenance" />
+                    <label htmlFor="maintenance" className="text-sm">Enable maintenance mode</label>
+                  </div>
+                </div>
+                <Button>Save Changes</Button>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Revenue Analytics</CardTitle>
+                <CardTitle>Course Settings</CardTitle>
+                <CardDescription>Course approval and moderation</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center text-gray-500">
-                  Chart placeholder - Revenue trends
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Auto-approve courses</label>
+                  <div className="flex items-center space-x-2">
+                    <input type="checkbox" id="auto-approve" />
+                    <label htmlFor="auto-approve" className="text-sm">Automatically approve new courses</label>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Course Completion Rates</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center text-gray-500">
-                  Chart placeholder - Completion statistics
+                <div>
+                  <label className="text-sm font-medium">Minimum course rating</label>
+                  <Input type="number" defaultValue="4.0" min="1" max="5" step="0.1" />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Platform Activity</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 flex items-center justify-center text-gray-500">
-                  Chart placeholder - Daily active users
+                <div>
+                  <label className="text-sm font-medium">Course review period (days)</label>
+                  <Input type="number" defaultValue="7" min="1" max="30" />
                 </div>
+                <Button>Save Changes</Button>
               </CardContent>
             </Card>
           </div>

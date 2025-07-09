@@ -118,6 +118,12 @@ const Navigation = () => {
             <Link to="/jobs" className="text-gray-700 hover:text-gray-900 font-medium">
               Jobs
             </Link>
+            <Link to="/blog" className="text-gray-700 hover:text-gray-900 font-medium">
+              Blog
+            </Link>
+            <Link to="/contribute" className="text-gray-700 hover:text-gray-900 font-medium">
+              Contribute
+            </Link>
             
             {/* Role-specific navigation */}
             {userRole === 'instructor' && (
