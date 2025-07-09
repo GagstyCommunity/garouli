@@ -6,10 +6,11 @@ import Navigation from '@/components/Navigation';
 import StudentDashboard from '@/components/dashboards/StudentDashboard';
 import InstructorDashboard from '@/components/dashboards/InstructorDashboard';
 import AdminDashboard from '@/components/dashboards/AdminDashboard';
+import AIAssistant from '@/components/AIAssistant';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Crown, Star, BookOpen, Users, Award, TrendingUp } from 'lucide-react';
+import { Loader2, Crown, Star, BookOpen, Users, Award, TrendingUp, MessageCircle } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, userRole, userProfile, loading: authLoading } = useAuth();
@@ -21,6 +22,7 @@ const Dashboard = () => {
     streakDays: 0
   });
   const [loadingStats, setLoadingStats] = useState(true);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -186,6 +188,21 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         {renderDashboard()}
       </div>
+
+      {/* AI Assistant Floating Button */}
+      <Button
+        onClick={() => setShowAIAssistant(true)}
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-blue-600 hover:bg-blue-700"
+        size="sm"
+      >
+        <MessageCircle className="h-6 w-6" />
+      </Button>
+
+      {/* AI Assistant */}
+      <AIAssistant
+        isOpen={showAIAssistant}
+        onClose={() => setShowAIAssistant(false)}
+      />
     </div>
   );
 };
