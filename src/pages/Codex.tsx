@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,117 +17,88 @@ import {
   ArrowRight
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 const Codex = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [courses, setCourses] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const categories = [
-    { id: 'all', name: 'All Topics', count: 125 },
-    { id: 'ai', name: 'AI & ML', count: 45 },
-    { id: 'automation', name: 'Automation', count: 32 },
-    { id: 'webdev', name: 'Web Development', count: 28 },
-    { id: 'data', name: 'Data Science', count: 20 },
-  ];
+  useEffect(() => {
+    fetchCodexData();
+  }, []);
 
-  const articles = [
-    {
-      id: 1,
-      title: "Complete Guide to AI Prompt Engineering",
-      description: "Master the art of crafting effective prompts for AI models to get better results",
-      category: "AI & ML",
-      difficulty: "Intermediate",
-      readTime: "12 min",
-      author: "Sarah Chen",
-      views: "2.4k",
-      rating: 4.8,
-      featured: true,
-      image: "/api/placeholder/400/250"
-    },
-    {
-      id: 2,
-      title: "Building Automated Workflows with Zapier",
-      description: "Step-by-step guide to automating your business processes",
-      category: "Automation",
-      difficulty: "Beginner",
-      readTime: "8 min",
-      author: "Mike Rodriguez",
-      views: "1.8k",
-      rating: 4.6,
-      featured: false,
-      image: "/api/placeholder/400/250"
-    },
-    {
-      id: 3,
-      title: "Top 10 AI Tools for Content Creation",
-      description: "Discover the best AI tools to boost your content creation workflow",
-      category: "AI & ML",
-      difficulty: "Beginner",
-      readTime: "15 min",
-      author: "Emily Johnson",
-      views: "3.2k",
-      rating: 4.9,
-      featured: true,
-      image: "/api/placeholder/400/250"
-    },
-    {
-      id: 4,
-      title: "React.js Best Practices for 2024",
-      description: "Modern React development patterns and techniques",
-      category: "Web Development",
-      difficulty: "Advanced",
-      readTime: "20 min",
-      author: "David Kim",
-      views: "2.1k",
-      rating: 4.7,
-      featured: false,
-      image: "/api/placeholder/400/250"
-    },
-    {
-      id: 5,
-      title: "Data Visualization with Python",
-      description: "Create stunning charts and graphs using matplotlib and seaborn",
-      category: "Data Science",
-      difficulty: "Intermediate",
-      readTime: "18 min",
-      author: "Lisa Wang",
-      views: "1.9k",
-      rating: 4.5,
-      featured: false,
-      image: "/api/placeholder/400/250"
-    },
-    {
-      id: 6,
-      title: "ChatGPT vs Claude: AI Comparison",
-      description: "Detailed comparison of popular AI assistants and their capabilities",
-      category: "AI & ML",
-      difficulty: "Beginner",
-      readTime: "10 min",
-      author: "Alex Thompson",
-      views: "4.1k",
-      rating: 4.8,
-      featured: true,
-      image: "/api/placeholder/400/250"
+  const fetchCodexData = async () => {
+    try {
+      // Fetch all published courses with instructor info
+      const { data: coursesData, error: coursesError } = await supabase
+        .from('courses')
+        .select(`
+          *,
+          profiles!courses_instructor_id_fkey(full_name, avatar_url)
+        `)
+        .eq('is_published', true)
+        .order('student_count', { ascending: false });
+
+      if (coursesError) throw coursesError;
+
+      // Process categories with counts
+      const categoryMap = {};
+      coursesData?.forEach(course => {
+        if (course.category) {
+          categoryMap[course.category] = (categoryMap[course.category] || 0) + 1;
+        }
+      });
+
+      const categoriesWithCounts = [
+        { id: 'all', name: 'All Topics', count: coursesData?.length || 0 },
+        ...Object.entries(categoryMap).map(([category, count]) => ({
+          id: category.toLowerCase().replace(/\s+/g, '-'),
+          name: category,
+          count
+        }))
+      ];
+
+      setCourses(coursesData || []);
+      setCategories(categoriesWithCounts);
+    } catch (error) {
+      console.error('Error fetching codex data:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  const trendingTopics = [
-    { name: "AI Automation", count: 45 },
-    { name: "Prompt Engineering", count: 38 },
-    { name: "No-Code Tools", count: 32 },
-    { name: "ChatGPT Tips", count: 28 },
-    { name: "Python Scripts", count: 24 },
-  ];
-
-  const filteredArticles = articles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || 
-                           article.category.toLowerCase().includes(selectedCategory);
+                           course.category?.toLowerCase().replace(/\s+/g, '-') === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const featuredArticles = articles.filter(article => article.featured);
+  const featuredCourses = courses.filter(course => course.rating >= 4.7).slice(0, 6);
+  const popularCourses = courses.sort((a, b) => (b.student_count || 0) - (a.student_count || 0)).slice(0, 6);
+
+  const trendingTopics = categories
+    .filter(cat => cat.id !== 'all')
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">Loading learning resources...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -146,7 +117,7 @@ const Codex = () => {
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <Input
-                  placeholder="Search tutorials, guides, and tools..."
+                  placeholder="Search courses, tutorials, and guides..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-12 pr-4 py-4 text-lg bg-white text-gray-900 border-0 rounded-lg shadow-lg"
@@ -223,45 +194,60 @@ const Codex = () => {
 
               <TabsContent value="latest" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredArticles.map((article) => (
-                    <Card key={article.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                      <div className="aspect-video bg-gray-200 rounded-t-lg relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                        <Badge className="absolute top-2 right-2 bg-white text-gray-800">
-                          {article.difficulty}
-                        </Badge>
-                        <div className="absolute bottom-4 left-4 text-white">
-                          <div className="flex items-center space-x-2 text-sm">
-                            <Clock className="h-4 w-4" />
-                            <span>{article.readTime}</span>
+                  {filteredCourses.map((course) => (
+                    <Card key={course.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                      <Link to={`/courses/${course.id}`}>
+                        <div className="aspect-video bg-gray-200 rounded-t-lg relative overflow-hidden">
+                          {course.thumbnail_url ? (
+                            <img 
+                              src={course.thumbnail_url} 
+                              alt={course.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
+                              <BookOpen className="h-16 w-16 text-white opacity-80" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                          <Badge className="absolute top-2 right-2 bg-white text-gray-800">
+                            {course.difficulty}
+                          </Badge>
+                          <div className="absolute bottom-4 left-4 text-white">
+                            <div className="flex items-center space-x-2 text-sm">
+                              <Clock className="h-4 w-4" />
+                              <span>{course.duration_hours}h</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <CardHeader>
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge variant="secondary">{article.category}</Badge>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                            <span>{article.rating}</span>
+                        <CardHeader>
+                          <div className="flex items-center justify-between mb-2">
+                            <Badge variant="secondary">{course.category}</Badge>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                              <span>{course.rating}</span>
+                            </div>
                           </div>
-                        </div>
-                        <CardTitle className="text-lg hover:text-blue-600 transition-colors">
-                          {article.title}
-                        </CardTitle>
-                        <CardDescription>{article.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <User className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">{article.author}</span>
+                          <CardTitle className="text-lg hover:text-blue-600 transition-colors">
+                            {course.title}
+                          </CardTitle>
+                          <CardDescription>{course.short_description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <User className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm text-gray-600">
+                                {course.profiles?.full_name || 'Anonymous'}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <Eye className="h-4 w-4" />
+                              <span>{course.student_count}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <Eye className="h-4 w-4" />
-                            <span>{article.views}</span>
-                          </div>
-                        </div>
-                      </CardContent>
+                        </CardContent>
+                      </Link>
                     </Card>
                   ))}
                 </div>
@@ -269,48 +255,63 @@ const Codex = () => {
 
               <TabsContent value="featured" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {featuredArticles.map((article) => (
-                    <Card key={article.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                      <div className="aspect-video bg-gray-200 rounded-t-lg relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                        <Badge className="absolute top-2 left-2 bg-yellow-500 text-black">
-                          Featured
-                        </Badge>
-                        <Badge className="absolute top-2 right-2 bg-white text-gray-800">
-                          {article.difficulty}
-                        </Badge>
-                        <div className="absolute bottom-4 left-4 text-white">
-                          <div className="flex items-center space-x-2 text-sm">
-                            <Clock className="h-4 w-4" />
-                            <span>{article.readTime}</span>
+                  {featuredCourses.map((course) => (
+                    <Card key={course.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                      <Link to={`/courses/${course.id}`}>
+                        <div className="aspect-video bg-gray-200 rounded-t-lg relative overflow-hidden">
+                          {course.thumbnail_url ? (
+                            <img 
+                              src={course.thumbnail_url} 
+                              alt={course.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
+                              <BookOpen className="h-16 w-16 text-white opacity-80" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                          <Badge className="absolute top-2 left-2 bg-yellow-500 text-black">
+                            Featured
+                          </Badge>
+                          <Badge className="absolute top-2 right-2 bg-white text-gray-800">
+                            {course.difficulty}
+                          </Badge>
+                          <div className="absolute bottom-4 left-4 text-white">
+                            <div className="flex items-center space-x-2 text-sm">
+                              <Clock className="h-4 w-4" />
+                              <span>{course.duration_hours}h</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <CardHeader>
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge variant="secondary">{article.category}</Badge>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                            <span>{article.rating}</span>
+                        <CardHeader>
+                          <div className="flex items-center justify-between mb-2">
+                            <Badge variant="secondary">{course.category}</Badge>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                              <span>{course.rating}</span>
+                            </div>
                           </div>
-                        </div>
-                        <CardTitle className="text-lg hover:text-blue-600 transition-colors">
-                          {article.title}
-                        </CardTitle>
-                        <CardDescription>{article.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <User className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">{article.author}</span>
+                          <CardTitle className="text-lg hover:text-blue-600 transition-colors">
+                            {course.title}
+                          </CardTitle>
+                          <CardDescription>{course.short_description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <User className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm text-gray-600">
+                                {course.profiles?.full_name || 'Anonymous'}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <Eye className="h-4 w-4" />
+                              <span>{course.student_count}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <Eye className="h-4 w-4" />
-                            <span>{article.views}</span>
-                          </div>
-                        </div>
-                      </CardContent>
+                        </CardContent>
+                      </Link>
                     </Card>
                   ))}
                 </div>
@@ -318,47 +319,60 @@ const Codex = () => {
 
               <TabsContent value="popular" className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredArticles
-                    .sort((a, b) => parseFloat(b.views) - parseFloat(a.views))
-                    .map((article) => (
-                    <Card key={article.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                      <div className="aspect-video bg-gray-200 rounded-t-lg relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                        <Badge className="absolute top-2 right-2 bg-white text-gray-800">
-                          {article.difficulty}
-                        </Badge>
-                        <div className="absolute bottom-4 left-4 text-white">
-                          <div className="flex items-center space-x-2 text-sm">
-                            <Clock className="h-4 w-4" />
-                            <span>{article.readTime}</span>
+                  {popularCourses.map((course) => (
+                    <Card key={course.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                      <Link to={`/courses/${course.id}`}>
+                        <div className="aspect-video bg-gray-200 rounded-t-lg relative overflow-hidden">
+                          {course.thumbnail_url ? (
+                            <img 
+                              src={course.thumbnail_url} 
+                              alt={course.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-500 to-purple-600">
+                              <BookOpen className="h-16 w-16 text-white opacity-80" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                          <Badge className="absolute top-2 right-2 bg-white text-gray-800">
+                            {course.difficulty}
+                          </Badge>
+                          <div className="absolute bottom-4 left-4 text-white">
+                            <div className="flex items-center space-x-2 text-sm">
+                              <Clock className="h-4 w-4" />
+                              <span>{course.duration_hours}h</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <CardHeader>
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge variant="secondary">{article.category}</Badge>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                            <span>{article.rating}</span>
+                        <CardHeader>
+                          <div className="flex items-center justify-between mb-2">
+                            <Badge variant="secondary">{course.category}</Badge>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                              <span>{course.rating}</span>
+                            </div>
                           </div>
-                        </div>
-                        <CardTitle className="text-lg hover:text-blue-600 transition-colors">
-                          {article.title}
-                        </CardTitle>
-                        <CardDescription>{article.description}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <User className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">{article.author}</span>
+                          <CardTitle className="text-lg hover:text-blue-600 transition-colors">
+                            {course.title}
+                          </CardTitle>
+                          <CardDescription>{course.short_description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <User className="h-4 w-4 text-gray-400" />
+                              <span className="text-sm text-gray-600">
+                                {course.profiles?.full_name || 'Anonymous'}
+                              </span>
+                            </div>
+                            <div className="flex items-center space-x-2 text-sm text-gray-500">
+                              <Eye className="h-4 w-4" />
+                              <span>{course.student_count}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <Eye className="h-4 w-4" />
-                            <span>{article.views}</span>
-                          </div>
-                        </div>
-                      </CardContent>
+                        </CardContent>
+                      </Link>
                     </Card>
                   ))}
                 </div>
@@ -368,7 +382,7 @@ const Codex = () => {
             {/* Load More Button */}
             <div className="text-center mt-8">
               <Button variant="outline" size="lg">
-                Load More Articles
+                Load More Courses
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </div>

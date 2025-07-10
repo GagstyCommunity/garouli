@@ -1,122 +1,138 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
 import { 
   Play, 
   Clock, 
   Users, 
   Star, 
-  Award, 
   BookOpen, 
-  Download,
-  Share2,
-  Heart,
-  MessageCircle
+  Award,
+  CheckCircle,
+  User
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const CourseDetail = () => {
-  const { slug } = useParams();
-  const { user } = useAuth();
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [course, setCourse] = useState<any>(null);
-  const [instructor, setInstructor] = useState<any>(null);
+  const { user } = useAuth();
+  const [course, setCourse] = useState(null);
+  const [modules, setModules] = useState([]);
+  const [instructor, setInstructor] = useState(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [enrollmentProgress, setEnrollmentProgress] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
-    const fetchCourse = async () => {
-      if (!slug) return;
+    fetchCourseData();
+  }, [id, user]);
 
-      try {
-        // Fetch course by ID (using slug as ID for now)
-        const { data: courseData, error: courseError } = await supabase
-          .from('courses')
+  const fetchCourseData = async () => {
+    try {
+      // Fetch course details
+      const { data: courseData, error: courseError } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (courseError) throw courseError;
+
+      // Fetch instructor details
+      const { data: instructorData, error: instructorError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', courseData.instructor_id)
+        .single();
+
+      if (instructorError) throw instructorError;
+
+      // Fetch course modules
+      const { data: modulesData, error: modulesError } = await supabase
+        .from('course_modules')
+        .select('*')
+        .eq('course_id', id)
+        .order('order_index');
+
+      if (modulesError) throw modulesError;
+
+      // Check if user is enrolled (if logged in)
+      if (user) {
+        const { data: enrollmentData, error: enrollmentError } = await supabase
+          .from('course_enrollments')
           .select('*')
-          .eq('id', slug)
-          .eq('is_published', true)
+          .eq('user_id', user.id)
+          .eq('course_id', id)
           .single();
 
-        if (courseError) {
-          console.error('Error fetching course:', courseError);
-          return;
+        if (!enrollmentError && enrollmentData) {
+          setIsEnrolled(true);
+          setEnrollmentProgress(enrollmentData.progress || 0);
         }
-
-        setCourse(courseData);
-
-        // Fetch instructor profile
-        const { data: instructorData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', courseData.instructor_id)
-          .single();
-
-        setInstructor(instructorData);
-
-        // Check if user is enrolled
-        if (user) {
-          const { data: enrollmentData } = await supabase
-            .from('course_enrollments')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('course_id', courseData.id)
-            .single();
-
-          setIsEnrolled(!!enrollmentData);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchCourse();
-  }, [slug, user]);
+      setCourse(courseData);
+      setInstructor(instructorData);
+      setModules(modulesData || []);
+    } catch (error) {
+      console.error('Error fetching course data:', error);
+      toast.error('Failed to load course details');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEnroll = async () => {
     if (!user) {
+      toast.error('Please sign in to enroll in courses');
       navigate('/auth');
       return;
     }
 
-    if (!course) return;
+    if (isEnrolled) {
+      // Navigate to course player
+      navigate(`/course/${id}/play`);
+      return;
+    }
 
+    setEnrolling(true);
     try {
       const { error } = await supabase
         .from('course_enrollments')
         .insert({
           user_id: user.id,
-          course_id: course.id,
+          course_id: id,
           progress: 0
         });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
+
+      // Update course student count
+      await supabase
+        .from('courses')
+        .update({ 
+          student_count: (course.student_count || 0) + 1 
+        })
+        .eq('id', id);
 
       setIsEnrolled(true);
-      toast({
-        title: "Enrolled successfully!",
-        description: "You can now start learning this course."
-      });
-    } catch (error: any) {
-      console.error('Error enrolling:', error);
-      toast({
-        title: "Error enrolling",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.success('Successfully enrolled in course!');
+    } catch (error) {
+      console.error('Error enrolling in course:', error);
+      toast.error('Failed to enroll in course');
+    } finally {
+      setEnrolling(false);
     }
   };
 
@@ -125,10 +141,8 @@ const CourseDetail = () => {
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="container mx-auto px-4 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div className="h-64 bg-gray-200 rounded mb-6"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">Loading course...</div>
           </div>
         </div>
       </div>
@@ -141,9 +155,9 @@ const CourseDetail = () => {
         <Navigation />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Course not found</h1>
+            <h1 className="text-2xl font-bold mb-4">Course Not Found</h1>
             <Button onClick={() => navigate('/courses')}>
-              Browse Courses
+              Back to Courses
             </Button>
           </div>
         </div>
@@ -155,111 +169,113 @@ const CourseDetail = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <div className="bg-gray-900 text-white py-12">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-16">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <div className="mb-4">
-                <Badge variant="secondary" className="mb-2">
-                  {course.category}
-                </Badge>
-                <h1 className="text-4xl font-bold mb-4">{course.title}</h1>
-                <p className="text-xl text-gray-300 mb-6">{course.short_description}</p>
-              </div>
-
+              <Badge className="mb-4 bg-white text-indigo-600">
+                {course.category}
+              </Badge>
+              <h1 className="text-4xl font-bold mb-4">{course.title}</h1>
+              <p className="text-xl mb-6 opacity-90">{course.short_description}</p>
+              
               <div className="flex items-center space-x-6 mb-6">
-                <div className="flex items-center space-x-2">
-                  <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                  <span className="font-semibold">{course.rating || 0}</span>
-                  <span className="text-gray-300">(1,234 ratings)</span>
+                <div className="flex items-center">
+                  <Clock className="h-5 w-5 mr-2" />
+                  <span>{course.duration_hours} hours</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5" />
-                  <span>{course.student_count || 0} students</span>
+                <div className="flex items-center">
+                  <Users className="h-5 w-5 mr-2" />
+                  <span>{course.student_count} students</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-5 w-5" />
-                  <span>{course.duration_hours}h total</span>
+                <div className="flex items-center">
+                  <Star className="h-5 w-5 mr-2 text-yellow-400 fill-current" />
+                  <span>{course.rating} rating</span>
                 </div>
+                <Badge variant="secondary">{course.difficulty}</Badge>
               </div>
 
               {instructor && (
-                <div className="flex items-center space-x-4 mb-6">
-                  <Avatar className="h-12 w-12">
+                <div className="flex items-center space-x-3">
+                  <Avatar>
+                    <AvatarImage src={instructor.avatar_url} />
                     <AvatarFallback>
-                      {instructor.full_name?.charAt(0) || 'I'}
+                      {instructor.full_name?.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-semibold">Created by {instructor.full_name}</p>
-                    <p className="text-gray-300 text-sm">{instructor.bio}</p>
+                    <p className="font-medium">Instructor: {instructor.full_name}</p>
+                    <p className="text-sm opacity-75">{instructor.bio?.substring(0, 80)}...</p>
                   </div>
                 </div>
               )}
-
-              <div className="flex items-center space-x-4">
-                <Badge variant="outline">
-                  {course.difficulty}
-                </Badge>
-                {course.has_certification && (
-                  <Badge variant="outline">
-                    <Award className="h-4 w-4 mr-1" />
-                    Certificate
-                  </Badge>
-                )}
-                <Badge variant="outline">
-                  Last updated 12/2024
-                </Badge>
-              </div>
             </div>
-
+            
             <div className="lg:col-span-1">
-              <Card className="bg-white text-gray-900 sticky top-24">
-                <CardContent className="p-6">
-                  <div className="aspect-video bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
-                    <Play className="h-16 w-16 text-gray-400" />
-                  </div>
-                  
-                  <div className="text-center mb-6">
-                    {course.is_free ? (
-                      <div className="text-3xl font-bold text-green-600">Free</div>
+              <Card className="bg-white text-gray-900">
+                <CardHeader>
+                  <div className="text-center">
+                    {course.thumbnail_url ? (
+                      <img 
+                        src={course.thumbnail_url} 
+                        alt={course.title}
+                        className="w-full h-48 object-cover rounded-lg mb-4"
+                      />
                     ) : (
-                      <div className="text-3xl font-bold">${course.price}</div>
+                      <div className="w-full h-48 bg-gray-200 rounded-lg mb-4 flex items-center justify-center">
+                        <BookOpen className="h-16 w-16 text-gray-400" />
+                      </div>
                     )}
+                    <div className="text-3xl font-bold text-indigo-600 mb-2">
+                      {course.is_free ? 'Free' : `$${course.price}`}
+                    </div>
                   </div>
-
-                  {isEnrolled ? (
-                    <Button 
-                      className="w-full mb-4" 
-                      onClick={() => navigate(`/learn/${course.id}`)}
-                    >
-                      Continue Learning
-                    </Button>
-                  ) : (
-                    <Button 
-                      className="w-full mb-4" 
-                      onClick={handleEnroll}
-                    >
-                      Enroll Now
-                    </Button>
+                </CardHeader>
+                <CardContent>
+                  {isEnrolled && (
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Progress</span>
+                        <span>{enrollmentProgress}%</span>
+                      </div>
+                      <Progress value={enrollmentProgress} className="mb-2" />
+                    </div>
                   )}
+                  
+                  <Button 
+                    className="w-full mb-4" 
+                    size="lg"
+                    onClick={handleEnroll}
+                    disabled={enrolling}
+                  >
+                    {enrolling ? (
+                      'Enrolling...'
+                    ) : isEnrolled ? (
+                      <>
+                        <Play className="h-4 w-4 mr-2" />
+                        Continue Learning
+                      </>
+                    ) : (
+                      'Enroll Now'
+                    )}
+                  </Button>
 
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <Button variant="outline" size="sm">
-                      <Heart className="h-4 w-4 mr-2" />
-                      Save
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Share2 className="h-4 w-4 mr-2" />
-                      Share
-                    </Button>
-                  </div>
-
-                  <div className="text-sm text-gray-600 space-y-2">
-                    <p>✓ Full lifetime access</p>
-                    <p>✓ Access on mobile and TV</p>
-                    <p>✓ Certificate of completion</p>
-                    <p>✓ 30-day money-back guarantee</p>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center">
+                      <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                      <span>Lifetime access</span>
+                    </div>
+                    {course.has_certification && (
+                      <div className="flex items-center">
+                        <Award className="h-4 w-4 text-yellow-500 mr-2" />
+                        <span>Certificate of completion</span>
+                      </div>
+                    )}
+                    <div className="flex items-center">
+                      <BookOpen className="h-4 w-4 text-blue-500 mr-2" />
+                      <span>{modules.length} modules</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -268,201 +284,85 @@ const CourseDetail = () => {
         </div>
       </div>
 
+      {/* Course Content */}
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-                <TabsTrigger value="instructor">Instructor</TabsTrigger>
-                <TabsTrigger value="reviews">Reviews</TabsTrigger>
-              </TabsList>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
+            <TabsTrigger value="instructor">Instructor</TabsTrigger>
+          </TabsList>
 
-              <TabsContent value="overview" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>What you'll learn</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-start space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                        <span>Master the fundamentals of AI and machine learning</span>
-                      </div>
-                      <div className="flex items-start space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                        <span>Build real-world projects using Python</span>
-                      </div>
-                      <div className="flex items-start space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                        <span>Understand data preprocessing and analysis</span>
-                      </div>
-                      <div className="flex items-start space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                        <span>Deploy models to production environments</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Course Description</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-700 leading-relaxed">
-                      {course.description || "This comprehensive course will take you through the fundamentals of modern technology and AI. You'll learn practical skills that you can apply immediately in your work and projects."}
-                    </p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="curriculum">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Course Curriculum</CardTitle>
-                    <CardDescription>
-                      {course.duration_hours} hours • 45 lectures • All levels
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Accordion type="single" collapsible>
-                      <AccordionItem value="section-1">
-                        <AccordionTrigger>Section 1: Introduction to AI</AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                              <div className="flex items-center space-x-2">
-                                <Play className="h-4 w-4" />
-                                <span>What is Artificial Intelligence?</span>
-                              </div>
-                              <span className="text-sm text-gray-500">10:30</span>
-                            </div>
-                            <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                              <div className="flex items-center space-x-2">
-                                <Play className="h-4 w-4" />
-                                <span>History and Evolution of AI</span>
-                              </div>
-                              <span className="text-sm text-gray-500">15:45</span>
-                            </div>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                      <AccordionItem value="section-2">
-                        <AccordionTrigger>Section 2: Machine Learning Basics</AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                              <div className="flex items-center space-x-2">
-                                <Play className="h-4 w-4" />
-                                <span>Introduction to Machine Learning</span>
-                              </div>
-                              <span className="text-sm text-gray-500">20:15</span>
-                            </div>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="instructor">
-                {instructor && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>About the Instructor</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-start space-x-4">
-                        <Avatar className="h-16 w-16">
-                          <AvatarFallback className="text-2xl">
-                            {instructor.full_name?.charAt(0) || 'I'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="text-xl font-semibold mb-2">{instructor.full_name}</h3>
-                          <p className="text-gray-600 mb-4">{instructor.bio}</p>
-                          <div className="flex items-center space-x-6 text-sm text-gray-500">
-                            <div className="flex items-center space-x-1">
-                              <Users className="h-4 w-4" />
-                              <span>1,234 students</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <BookOpen className="h-4 w-4" />
-                              <span>5 courses</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <Star className="h-4 w-4" />
-                              <span>4.8 rating</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="reviews">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Student Reviews</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      <div className="flex items-start space-x-4">
-                        <Avatar>
-                          <AvatarFallback>JS</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="flex items-center space-x-2 mb-2">
-                            <span className="font-semibold">John Smith</span>
-                            <div className="flex items-center">
-                              {[...Array(5)].map((_, i) => (
-                                <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                              ))}
-                            </div>
-                          </div>
-                          <p className="text-gray-600">
-                            Excellent course! The instructor explains complex concepts in a very understandable way. Highly recommended for beginners.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          <div className="lg:col-span-1">
+          <TabsContent value="overview" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Related Courses</CardTitle>
+                <CardTitle>Course Description</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-16 h-16 bg-gray-200 rounded"></div>
-                    <div>
-                      <h4 className="font-semibold">Advanced AI Concepts</h4>
-                      <p className="text-sm text-gray-600">$49.99</p>
+                <p className="text-gray-700 leading-relaxed mb-6">{course.description}</p>
+                
+                {course.tags && course.tags.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-3">What you'll learn</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {course.tags.map((tag, index) => (
+                        <Badge key={index} variant="outline">{tag}</Badge>
+                      ))}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-16 h-16 bg-gray-200 rounded"></div>
-                    <div>
-                      <h4 className="font-semibold">Python for Data Science</h4>
-                      <p className="text-sm text-gray-600">Free</p>
-                    </div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+
+          <TabsContent value="curriculum" className="space-y-4">
+            {modules.map((module, index) => (
+              <Card key={module.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">
+                      Module {index + 1}: {module.title}
+                    </CardTitle>
+                    <div className="flex items-center space-x-2">
+                      {module.is_free && <Badge variant="secondary">Free</Badge>}
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Clock className="h-4 w-4 mr-1" />
+                        {module.duration_minutes} min
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">{module.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="instructor" className="space-y-6">
+            {instructor && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center space-x-4">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={instructor.avatar_url} />
+                      <AvatarFallback className="text-lg">
+                        {instructor.full_name?.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <CardTitle className="text-xl">{instructor.full_name}</CardTitle>
+                      <CardDescription>Course Instructor</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-700 leading-relaxed">{instructor.bio}</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

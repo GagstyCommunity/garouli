@@ -6,17 +6,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
-import Courses from "./pages/Courses";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
-import CreateCourse from "./pages/CreateCourse";
+import Courses from "./pages/Courses";
 import CourseDetail from "./pages/CourseDetail";
-import InstructorProfile from "./pages/InstructorProfile";
-import Codex from "./pages/Codex";
-import Battle from "./pages/Battle";
+import CoursePlayer from "./pages/CoursePlayer";
 import Jobs from "./pages/Jobs";
+import JobDetail from "./pages/JobDetail";
+import Battle from "./pages/Battle";
+import Codex from "./pages/Codex";
+import CreateCourse from "./pages/CreateCourse";
+import InstructorProfile from "./pages/InstructorProfile";
 import AgencySignup from "./pages/AgencySignup";
 import NotFound from "./pages/NotFound";
+import AgencyDetail from "./pages/AgencyDetail";
+import CategoryPage from "./pages/CategoryPage";
 
 const queryClient = new QueryClient();
 
@@ -29,18 +33,20 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/courses" element={<Courses />} />
-            <Route path="/course/:slug" element={<CourseDetail />} />
-            <Route path="/instructor/:username" element={<InstructorProfile />} />
-            <Route path="/codex" element={<Codex />} />
-            <Route path="/battle" element={<Battle />} />
-            <Route path="/jobs" element={<Jobs />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/instructor/create-course" element={<CreateCourse />} />
+            <Route path="/courses" element={<Courses />} />
+            <Route path="/courses/:id" element={<CourseDetail />} />
+            <Route path="/course/:courseId/play" element={<CoursePlayer />} />
+            <Route path="/jobs" element={<Jobs />} />
+            <Route path="/jobs/:id" element={<JobDetail />} />
+            <Route path="/battle" element={<Battle />} />
+            <Route path="/codex" element={<Codex />} />
+            <Route path="/create-course" element={<CreateCourse />} />
+            <Route path="/instructor/:id" element={<InstructorProfile />} />
             <Route path="/agency-signup" element={<AgencySignup />} />
-            <Route path="/claim" element={<AgencySignup />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/agency/:id" element={<AgencyDetail />} />
+            <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

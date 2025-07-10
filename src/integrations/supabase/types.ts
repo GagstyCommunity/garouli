@@ -546,6 +546,50 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_attempts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          passed: boolean
+          quiz_id: string
+          score: number
+          started_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          passed?: boolean
+          quiz_id: string
+          score: number
+          started_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          passed?: boolean
+          quiz_id?: string
+          score?: number
+          started_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "course_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_gamification: {
         Row: {
           badges: string[] | null
