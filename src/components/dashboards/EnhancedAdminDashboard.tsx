@@ -49,15 +49,34 @@ const EnhancedAdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch all profiles with roles
+      // Fetch all profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles(role)
-        `);
+        .select('*');
 
       if (profilesError) throw profilesError;
+
+      // Fetch user roles separately
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) throw rolesError;
+
+      // Create a map of user roles for easy lookup
+      const userRolesMap = {};
+      rolesData?.forEach(role => {
+        if (!userRolesMap[role.user_id]) {
+          userRolesMap[role.user_id] = [];
+        }
+        userRolesMap[role.user_id].push(role.role);
+      });
+
+      // Combine profiles with their roles
+      const profilesWithRoles = profilesData?.map(profile => ({
+        ...profile,
+        user_roles: userRolesMap[profile.id] || []
+      })) || [];
 
       // Fetch courses with instructor info
       const { data: coursesData, error: coursesError } = await supabase
@@ -87,23 +106,23 @@ const EnhancedAdminDashboard = () => {
       if (subscriptionsError) throw subscriptionsError;
 
       // Process data
-      const students = profilesData?.filter(user => 
-        user.user_roles?.some(role => role.role === 'student')
-      ) || [];
+      const students = profilesWithRoles.filter(user => 
+        user.user_roles.includes('student')
+      );
       
-      const instructors = profilesData?.filter(user => 
-        user.user_roles?.some(role => role.role === 'instructor')
-      ) || [];
+      const instructors = profilesWithRoles.filter(user => 
+        user.user_roles.includes('instructor')
+      );
       
-      const agenciesData = profilesData?.filter(user => 
-        user.user_roles?.some(role => role.role === 'enterprise')
-      ) || [];
+      const agenciesData = profilesWithRoles.filter(user => 
+        user.user_roles.includes('enterprise')
+      );
 
       const activeSubscriptions = subscriptionsData?.filter(sub => sub.status === 'active').length || 0;
       const totalRevenue = subscriptionsData?.reduce((sum, sub) => sum + (sub.annual_fee || 0), 0) || 0;
 
       setStats({
-        totalUsers: profilesData?.length || 0,
+        totalUsers: profilesWithRoles.length,
         totalStudents: students.length,
         totalInstructors: instructors.length,
         totalAgencies: agenciesData.length,
@@ -113,10 +132,10 @@ const EnhancedAdminDashboard = () => {
         activeSubscriptions
       });
 
-      setUsers(profilesData || []);
+      setUsers(profilesWithRoles);
       setCourses(coursesData || []);
       setJobs(jobsData || []);
-      setAgencies(agenciesData || []);
+      setAgencies(agenciesData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast.error('Failed to load dashboard data');
@@ -271,9 +290,9 @@ const EnhancedAdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-wrap gap-1">
-                      {user.user_roles?.map((roleObj, index) => (
+                      {user.user_roles?.map((role, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
-                          {roleObj.role}
+                          {role}
                         </Badge>
                       ))}
                     </div>
