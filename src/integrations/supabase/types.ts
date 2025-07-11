@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      admins: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          password_hash: string
+          permissions: Json | null
+          role: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          password_hash: string
+          permissions?: Json | null
+          role?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          password_hash?: string
+          permissions?: Json | null
+          role?: string | null
+        }
+        Relationships: []
+      }
+      agency_profiles: {
+        Row: {
+          company_name: string | null
+          company_size: string | null
+          created_at: string | null
+          id: string
+          industry: string | null
+          user_id: string | null
+          verified: boolean | null
+          website_url: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          company_size?: string | null
+          created_at?: string | null
+          id?: string
+          industry?: string | null
+          user_id?: string | null
+          verified?: boolean | null
+          website_url?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          company_size?: string | null
+          created_at?: string | null
+          id?: string
+          industry?: string | null
+          user_id?: string | null
+          verified?: boolean | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agency_subscriptions: {
         Row: {
           annual_fee: number | null
@@ -90,6 +158,116 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          is_linkedin_verified: boolean | null
+          is_verified: boolean | null
+          name: string
+          photo_url: string | null
+          red_flag: boolean | null
+          role: string
+          suspended: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          is_linkedin_verified?: boolean | null
+          is_verified?: boolean | null
+          name: string
+          photo_url?: string | null
+          red_flag?: boolean | null
+          role: string
+          suspended?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_linkedin_verified?: boolean | null
+          is_verified?: boolean | null
+          name?: string
+          photo_url?: string | null
+          red_flag?: boolean | null
+          role?: string
+          suspended?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      battles: {
+        Row: {
+          created_at: string | null
+          end_date: string | null
+          id: string
+          prompt: string
+          start_date: string | null
+          status: string | null
+          theme: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          prompt: string
+          start_date?: string | null
+          status?: string | null
+          theme?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          prompt?: string
+          start_date?: string | null
+          status?: string | null
+          theme?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      blogs: {
+        Row: {
+          approved: boolean | null
+          author_id: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          approved?: boolean | null
+          author_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          approved?: boolean | null
+          author_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blogs_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -391,6 +569,50 @@ export type Database = {
         }
         Relationships: []
       }
+      instructor_profiles: {
+        Row: {
+          average_rating: number | null
+          bio: string | null
+          created_at: string | null
+          expertise_areas: string[] | null
+          id: string
+          teaching_experience: number | null
+          total_students: number | null
+          user_id: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string | null
+          expertise_areas?: string[] | null
+          id?: string
+          teaching_experience?: number | null
+          total_students?: number | null
+          user_id?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          average_rating?: number | null
+          bio?: string | null
+          created_at?: string | null
+          expertise_areas?: string[] | null
+          id?: string
+          teaching_experience?: number | null
+          total_students?: number | null
+          user_id?: string | null
+          verified?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instructor_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_applications: {
         Row: {
           applied_at: string | null
@@ -480,6 +702,39 @@ export type Database = {
           salary_min?: number | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          approved: boolean | null
+          company_name: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          job_type: string | null
+          location: string | null
+          title: string
+        }
+        Insert: {
+          approved?: boolean | null
+          company_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          job_type?: string | null
+          location?: string | null
+          title: string
+        }
+        Update: {
+          approved?: boolean | null
+          company_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          job_type?: string | null
+          location?: string | null
+          title?: string
         }
         Relationships: []
       }
@@ -590,6 +845,73 @@ export type Database = {
           },
         ]
       }
+      student_profiles: {
+        Row: {
+          created_at: string | null
+          id: string
+          learning_goals: string[] | null
+          preferred_categories: string[] | null
+          skill_level: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          learning_goals?: string[] | null
+          preferred_categories?: string[] | null
+          skill_level?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          learning_goals?: string[] | null
+          preferred_categories?: string[] | null
+          skill_level?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_logs: {
+        Row: {
+          action: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_gamification: {
         Row: {
           badges: string[] | null
@@ -692,6 +1014,48 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["user_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          is_linkedin_verified: boolean | null
+          is_verified: boolean | null
+          name: string
+          photo_url: string | null
+          red_flag: boolean | null
+          role: string | null
+          suspended: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          is_linkedin_verified?: boolean | null
+          is_verified?: boolean | null
+          name: string
+          photo_url?: string | null
+          red_flag?: boolean | null
+          role?: string | null
+          suspended?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_linkedin_verified?: boolean | null
+          is_verified?: boolean | null
+          name?: string
+          photo_url?: string | null
+          red_flag?: boolean | null
+          role?: string | null
+          suspended?: boolean | null
+          updated_at?: string | null
         }
         Relationships: []
       }

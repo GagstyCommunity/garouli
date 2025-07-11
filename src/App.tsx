@@ -21,6 +21,7 @@ import AgencySignup from "./pages/AgencySignup";
 import NotFound from "./pages/NotFound";
 import AgencyDetail from "./pages/AgencyDetail";
 import CategoryPage from "./pages/CategoryPage";
+import AdminPanel from "./pages/AdminPanel";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/agency-signup" element={<AgencySignup />} />
             <Route path="/agency/:id" element={<AgencyDetail />} />
             <Route path="/category/:category" element={<CategoryPage />} />
+            <Route path="/admin" element={<AdminPanel />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
