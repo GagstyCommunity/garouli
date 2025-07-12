@@ -14,30 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_activity_logs: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string | null
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          resource_id: string | null
+          resource_type: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_activity_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admins: {
         Row: {
           created_at: string | null
-          email: string
+          created_by: string | null
           id: string
-          password_hash: string
+          is_active: boolean | null
           permissions: Json | null
-          role: string | null
+          role: Database["public"]["Enums"]["admin_role"]
+          updated_at: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
-          email: string
+          created_by?: string | null
           id?: string
-          password_hash: string
+          is_active?: boolean | null
           permissions?: Json | null
-          role?: string | null
+          role?: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
-          email?: string
+          created_by?: string | null
           id?: string
-          password_hash?: string
+          is_active?: boolean | null
           permissions?: Json | null
-          role?: string | null
+          role?: Database["public"]["Enums"]["admin_role"]
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -306,6 +359,170 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cms_pages: {
+        Row: {
+          author_id: string | null
+          content: string | null
+          created_at: string | null
+          id: string
+          meta_description: string | null
+          meta_title: string | null
+          published_at: string | null
+          slug: string
+          status: string | null
+          title: string
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          author_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          published_at?: string | null
+          slug: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          author_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          published_at?: string | null
+          slug?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      communities: {
+        Row: {
+          cover_image: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          icon_image: string | null
+          id: string
+          member_count: number | null
+          moderators: string[] | null
+          post_count: number | null
+          slug: string
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          visibility: string | null
+        }
+        Insert: {
+          cover_image?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          icon_image?: string | null
+          id?: string
+          member_count?: number | null
+          moderators?: string[] | null
+          post_count?: number | null
+          slug: string
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          cover_image?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          icon_image?: string | null
+          id?: string
+          member_count?: number | null
+          moderators?: string[] | null
+          post_count?: number | null
+          slug?: string
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          visibility?: string | null
+        }
+        Relationships: []
+      }
+      community_posts: {
+        Row: {
+          ai_moderation_score: number | null
+          community_id: string | null
+          content: string | null
+          created_at: string | null
+          downvotes: number | null
+          flag_reason: string | null
+          id: string
+          is_flagged: boolean | null
+          is_pinned: boolean | null
+          post_type: string | null
+          reply_count: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+          upvotes: number | null
+          user_id: string | null
+        }
+        Insert: {
+          ai_moderation_score?: number | null
+          community_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          downvotes?: number | null
+          flag_reason?: string | null
+          id?: string
+          is_flagged?: boolean | null
+          is_pinned?: boolean | null
+          post_type?: string | null
+          reply_count?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          upvotes?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          ai_moderation_score?: number | null
+          community_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          downvotes?: number | null
+          flag_reason?: string | null
+          id?: string
+          is_flagged?: boolean | null
+          is_pinned?: boolean | null
+          post_type?: string | null
+          reply_count?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          upvotes?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_posts_community_id_fkey"
+            columns: ["community_id"]
+            isOneToOne: false
+            referencedRelation: "communities"
             referencedColumns: ["id"]
           },
         ]
@@ -604,6 +821,300 @@ export type Database = {
         }
         Relationships: []
       }
+      event_participants: {
+        Row: {
+          attended: boolean | null
+          certificate_issued: boolean | null
+          event_id: string | null
+          id: string
+          registered_at: string | null
+          role: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attended?: boolean | null
+          certificate_issued?: boolean | null
+          event_id?: string | null
+          id?: string
+          registered_at?: string | null
+          role?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attended?: boolean | null
+          certificate_issued?: boolean | null
+          event_id?: string | null
+          id?: string
+          registered_at?: string | null
+          role?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_speakers: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          event_id: string | null
+          id: string
+          is_external: boolean | null
+          linkedin_url: string | null
+          name: string
+          photo_url: string | null
+          speaking_order: number | null
+          talk_duration: number | null
+          talk_title: string | null
+          title: string | null
+          user_id: string | null
+          website_url: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          is_external?: boolean | null
+          linkedin_url?: string | null
+          name: string
+          photo_url?: string | null
+          speaking_order?: number | null
+          talk_duration?: number | null
+          talk_title?: string | null
+          title?: string | null
+          user_id?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          is_external?: boolean | null
+          linkedin_url?: string | null
+          name?: string
+          photo_url?: string | null
+          speaking_order?: number | null
+          talk_duration?: number | null
+          talk_title?: string | null
+          title?: string | null
+          user_id?: string | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_speakers_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          certificate_enabled: boolean | null
+          certificate_template: string | null
+          cover_image: string | null
+          created_at: string | null
+          current_participants: number | null
+          description: string | null
+          end_time: string | null
+          event_type: string | null
+          event_url: string | null
+          host_id: string | null
+          host_type: string | null
+          id: string
+          location: string | null
+          max_participants: number | null
+          slug: string
+          start_time: string | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          certificate_enabled?: boolean | null
+          certificate_template?: string | null
+          cover_image?: string | null
+          created_at?: string | null
+          current_participants?: number | null
+          description?: string | null
+          end_time?: string | null
+          event_type?: string | null
+          event_url?: string | null
+          host_id?: string | null
+          host_type?: string | null
+          id?: string
+          location?: string | null
+          max_participants?: number | null
+          slug: string
+          start_time?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          certificate_enabled?: boolean | null
+          certificate_template?: string | null
+          cover_image?: string | null
+          created_at?: string | null
+          current_participants?: number | null
+          description?: string | null
+          end_time?: string | null
+          event_type?: string | null
+          event_url?: string | null
+          host_id?: string | null
+          host_type?: string | null
+          id?: string
+          location?: string | null
+          max_participants?: number | null
+          slug?: string
+          start_time?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hackathon_submissions: {
+        Row: {
+          ai_analysis: Json | null
+          code_url: string | null
+          demo_url: string | null
+          description: string | null
+          hackathon_id: string | null
+          id: string
+          judge_scores: Json | null
+          presentation_url: string | null
+          project_title: string
+          public_votes: number | null
+          status: string | null
+          submitted_at: string | null
+          team_name: string | null
+          user_id: string | null
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          code_url?: string | null
+          demo_url?: string | null
+          description?: string | null
+          hackathon_id?: string | null
+          id?: string
+          judge_scores?: Json | null
+          presentation_url?: string | null
+          project_title: string
+          public_votes?: number | null
+          status?: string | null
+          submitted_at?: string | null
+          team_name?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          ai_analysis?: Json | null
+          code_url?: string | null
+          demo_url?: string | null
+          description?: string | null
+          hackathon_id?: string | null
+          id?: string
+          judge_scores?: Json | null
+          presentation_url?: string | null
+          project_title?: string
+          public_votes?: number | null
+          status?: string | null
+          submitted_at?: string | null
+          team_name?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hackathon_submissions_hackathon_id_fkey"
+            columns: ["hackathon_id"]
+            isOneToOne: false
+            referencedRelation: "hackathons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hackathons: {
+        Row: {
+          brief: string | null
+          cover_image: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          judging_deadline: string | null
+          max_participants: number | null
+          prize_pool: number | null
+          prize_tiers: Json | null
+          rules: string | null
+          slug: string
+          start_date: string | null
+          status: string | null
+          submission_deadline: string | null
+          theme: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          brief?: string | null
+          cover_image?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          judging_deadline?: string | null
+          max_participants?: number | null
+          prize_pool?: number | null
+          prize_tiers?: Json | null
+          rules?: string | null
+          slug: string
+          start_date?: string | null
+          status?: string | null
+          submission_deadline?: string | null
+          theme?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          brief?: string | null
+          cover_image?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          judging_deadline?: string | null
+          max_participants?: number | null
+          prize_pool?: number | null
+          prize_tiers?: Json | null
+          rules?: string | null
+          slug?: string
+          start_date?: string | null
+          status?: string | null
+          submission_deadline?: string | null
+          theme?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       instructor_profiles: {
         Row: {
           average_rating: number | null
@@ -880,6 +1391,54 @@ export type Database = {
           },
         ]
       }
+      seo_metadata: {
+        Row: {
+          canonical_url: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_indexed: boolean | null
+          keywords: string[] | null
+          og_description: string | null
+          og_image: string | null
+          og_title: string | null
+          page_path: string
+          structured_data: Json | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          canonical_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_indexed?: boolean | null
+          keywords?: string[] | null
+          og_description?: string | null
+          og_image?: string | null
+          og_title?: string | null
+          page_path: string
+          structured_data?: Json | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          canonical_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_indexed?: boolean | null
+          keywords?: string[] | null
+          og_description?: string | null
+          og_image?: string | null
+          og_title?: string | null
+          page_path?: string
+          structured_data?: Json | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       student_profiles: {
         Row: {
           created_at: string | null
@@ -1136,6 +1695,13 @@ export type Database = {
         Args: { p_user_id: string; p_course_id: string }
         Returns: number
       }
+      has_admin_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["admin_role"]
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _user_id: string
@@ -1143,8 +1709,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
+      admin_role: "superadmin" | "admin" | "moderator" | "editor" | "verifier"
       subscription_status: "trial" | "active" | "cancelled" | "expired"
       user_role: "student" | "instructor" | "admin" | "enterprise"
     }
@@ -1274,6 +1845,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admin_role: ["superadmin", "admin", "moderator", "editor", "verifier"],
       subscription_status: ["trial", "active", "cancelled", "expired"],
       user_role: ["student", "instructor", "admin", "enterprise"],
     },
