@@ -5,7 +5,7 @@ import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import EnhancedAdminDashboard from '@/components/admin/EnhancedAdminDashboard';
+import EnhancedAdminDashboard from '@/components/dashboards/EnhancedAdminDashboard';
 import UserManagement from '@/components/admin/UserManagement';
 import AdminRoles from '@/components/admin/AdminRoles';
 import CourseManagement from '@/components/admin/CourseManagement';
