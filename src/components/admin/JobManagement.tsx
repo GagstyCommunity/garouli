@@ -12,7 +12,7 @@ interface Job {
   id: string;
   title: string;
   description: string;
-  agency_name: string;
+  agency_id: string;
   location: string;
   employment_type: string;
   salary_min: number;
@@ -20,6 +20,7 @@ interface Job {
   is_active: boolean;
   applications_count: number;
   created_at: string;
+  agency_name?: string;
 }
 
 const JobManagement = () => {
@@ -33,18 +34,31 @@ const JobManagement = () => {
 
   const fetchJobs = async () => {
     try {
-      const { data: jobsData } = await supabase
+      // First get job postings
+      const { data: jobsData, error: jobsError } = await supabase
         .from('job_postings')
-        .select(`
-          *,
-          profiles!job_postings_agency_id_fkey(full_name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
+      if (jobsError) throw jobsError;
+
       if (jobsData) {
+        // Get agency profiles separately to avoid join issues
+        const agencyIds = [...new Set(jobsData.map(job => job.agency_id).filter(Boolean))];
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', agencyIds);
+
+        // Merge the data
         const enrichedJobs = jobsData.map(job => ({
           ...job,
-          agency_name: job.profiles?.full_name || 'Unknown Agency'
+          agency_name: profilesData?.find(p => p.id === job.agency_id)?.full_name || 'Unknown Agency',
+          location: job.location || 'Remote',
+          employment_type: job.employment_type || 'Full-time',
+          salary_min: job.salary_min || 0,
+          salary_max: job.salary_max || 0,
+          applications_count: job.applications_count || 0
         })) as Job[];
 
         setJobs(enrichedJobs);
@@ -79,7 +93,7 @@ const JobManagement = () => {
 
   const filteredJobs = jobs.filter(job =>
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.agency_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.agency_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.location.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

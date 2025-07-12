@@ -22,6 +22,16 @@ interface RecommendedCourse {
   reason: string;
 }
 
+interface UserLearningGoals {
+  preferred_categories: string[] | null;
+  preferred_difficulty: string | null;
+}
+
+interface CourseInteraction {
+  course_id: string;
+  interaction_type: string;
+}
+
 const RecommendationEngine: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -36,17 +46,26 @@ const RecommendationEngine: React.FC = () => {
 
   const fetchRecommendations = async () => {
     try {
-      // Get user's learning goals and interactions
-      const { data: goals } = await supabase
+      // Get user's learning goals
+      const { data: goals, error: goalsError } = await supabase
         .from('user_learning_goals')
         .select('*')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
-      const { data: interactions } = await supabase
+      if (goalsError) {
+        console.log('No learning goals found, using default preferences');
+      }
+
+      // Get user's course interactions
+      const { data: interactions, error: interactionsError } = await supabase
         .from('course_interactions')
         .select('course_id, interaction_type')
         .eq('user_id', user?.id);
+
+      if (interactionsError) {
+        console.log('No interactions found');
+      }
 
       // Get courses based on preferences and behavior
       let query = supabase
@@ -56,11 +75,17 @@ const RecommendationEngine: React.FC = () => {
         .limit(6);
 
       // Filter by preferred categories if available
-      if (goals?.preferred_categories?.length > 0) {
-        query = query.in('category', goals.preferred_categories);
+      const userGoals = goals as UserLearningGoals | null;
+      if (userGoals?.preferred_categories && userGoals.preferred_categories.length > 0) {
+        query = query.in('category', userGoals.preferred_categories);
       }
 
-      const { data: courses } = await query;
+      const { data: courses, error: coursesError } = await query;
+
+      if (coursesError) {
+        console.error('Error fetching courses:', coursesError);
+        return;
+      }
 
       if (courses) {
         // Calculate recommendation scores
@@ -69,24 +94,24 @@ const RecommendationEngine: React.FC = () => {
           let reason = 'Popular course';
 
           // Boost score for preferred categories
-          if (goals?.preferred_categories?.includes(course.category)) {
+          if (userGoals?.preferred_categories?.includes(course.category)) {
             score += 30;
             reason = 'Matches your interests';
           }
 
           // Boost score for difficulty preference
-          if (goals?.preferred_difficulty === course.difficulty) {
+          if (userGoals?.preferred_difficulty === course.difficulty) {
             score += 20;
             reason = 'Perfect difficulty level';
           }
 
           // Boost score for highly rated courses
-          if (course.rating >= 4.5) {
+          if (course.rating && course.rating >= 4.5) {
             score += 15;
           }
 
           // Reduce score if already enrolled
-          const enrolled = interactions?.some(i => 
+          const enrolled = interactions?.some((i: CourseInteraction) => 
             i.course_id === course.id && i.interaction_type === 'enroll'
           );
           if (enrolled) {
@@ -96,7 +121,12 @@ const RecommendationEngine: React.FC = () => {
           return {
             ...course,
             recommendation_score: Math.min(100, score),
-            reason
+            reason,
+            rating: course.rating || 0,
+            student_count: course.student_count || 0,
+            duration_hours: course.duration_hours || 0,
+            thumbnail_url: course.thumbnail_url || '/placeholder.svg',
+            description: course.description || ''
           };
         });
 
@@ -117,12 +147,16 @@ const RecommendationEngine: React.FC = () => {
   const trackInteraction = async (courseId: string, type: string) => {
     if (!user) return;
 
-    await supabase.from('course_interactions').insert({
-      user_id: user.id,
-      course_id: courseId,
-      interaction_type: type,
-      interaction_data: { timestamp: new Date().toISOString() }
-    });
+    try {
+      await supabase.from('course_interactions').insert({
+        user_id: user.id,
+        course_id: courseId,
+        interaction_type: type,
+        interaction_data: { timestamp: new Date().toISOString() }
+      });
+    } catch (error) {
+      console.error('Error tracking interaction:', error);
+    }
   };
 
   const handleCourseClick = async (course: RecommendedCourse) => {

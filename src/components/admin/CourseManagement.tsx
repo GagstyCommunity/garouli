@@ -4,22 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Search, 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle,
-  BookOpen,
-  Users,
-  Star,
-  Clock,
-  Bot
-} from 'lucide-react';
+import { BookOpen, Search, Plus, Edit, Trash2, Eye, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -30,11 +15,10 @@ interface Course {
   instructor_id: string;
   category: string;
   difficulty: string;
-  price: number;
-  is_published: boolean;
-  rating: number;
-  student_count: number;
   duration_hours: number;
+  is_published: boolean;
+  student_count: number;
+  rating: number;
   created_at: string;
   instructor_name?: string;
 }
@@ -43,7 +27,6 @@ const CourseManagement = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
 
   useEffect(() => {
     fetchCourses();
@@ -51,18 +34,32 @@ const CourseManagement = () => {
 
   const fetchCourses = async () => {
     try {
-      const { data: coursesData } = await supabase
+      // First get courses
+      const { data: coursesData, error: coursesError } = await supabase
         .from('courses')
-        .select(`
-          *,
-          profiles!courses_instructor_id_fkey(full_name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
+      if (coursesError) throw coursesError;
+
       if (coursesData) {
+        // Get instructor profiles separately to avoid join issues
+        const instructorIds = [...new Set(coursesData.map(course => course.instructor_id))];
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', instructorIds);
+
+        // Merge the data
         const enrichedCourses = coursesData.map(course => ({
           ...course,
-          instructor_name: course.profiles?.full_name || 'Unknown Instructor'
+          instructor_name: profilesData?.find(p => p.id === course.instructor_id)?.full_name || 'Unknown Instructor',
+          description: course.description || '',
+          category: course.category || 'General',
+          difficulty: course.difficulty || 'Beginner',
+          duration_hours: course.duration_hours || 0,
+          student_count: course.student_count || 0,
+          rating: course.rating || 0
         })) as Course[];
 
         setCourses(enrichedCourses);
@@ -75,7 +72,7 @@ const CourseManagement = () => {
     }
   };
 
-  const handleTogglePublish = async (courseId: string, currentStatus: boolean) => {
+  const handleTogglePublished = async (courseId: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
         .from('courses')
@@ -85,56 +82,24 @@ const CourseManagement = () => {
       if (error) throw error;
 
       setCourses(courses.map(course => 
-        course.id === courseId 
-          ? { ...course, is_published: !currentStatus }
-          : course
+        course.id === courseId ? { ...course, is_published: !currentStatus } : course
       ));
       
       toast.success(`Course ${!currentStatus ? 'published' : 'unpublished'} successfully`);
     } catch (error) {
       console.error('Error updating course:', error);
-      toast.error('Failed to update course');
+      toast.error('Failed to update course status');
     }
   };
 
-  const handleAIAssist = (courseId: string, action: string) => {
-    toast.success(`AI ${action} initiated for course!`, {
-      description: "AI analysis will be available in the AI Logs section"
-    });
-  };
-
-  const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.instructor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.category?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    switch (activeTab) {
-      case 'published':
-        return matchesSearch && course.is_published;
-      case 'draft':
-        return matchesSearch && !course.is_published;
-      case 'flagged':
-        return matchesSearch && course.rating < 3; // Mock flagged condition
-      default:
-        return matchesSearch;
-    }
-  });
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty?.toLowerCase()) {
-      case 'beginner': return 'bg-green-100 text-green-800';
-      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
-      case 'advanced': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const filteredCourses = courses.filter(course =>
+    course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.instructor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">Loading courses...</div>
-      </div>
-    );
+    return <div className="flex items-center justify-center h-64">Loading courses...</div>;
   }
 
   return (
@@ -151,118 +116,78 @@ const CourseManagement = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>All Courses ({courses.length})</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search courses..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search courses..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-64"
+              />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all">All Courses</TabsTrigger>
-              <TabsTrigger value="published">Published</TabsTrigger>
-              <TabsTrigger value="draft">Draft</TabsTrigger>
-              <TabsTrigger value="flagged">Flagged</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value={activeTab} className="mt-6">
-              <div className="space-y-4">
-                {filteredCourses.map((course) => (
-                  <Card key={course.id}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <BookOpen className="h-5 w-5 text-blue-500" />
-                            <h3 className="text-lg font-semibold">{course.title}</h3>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            by {course.instructor_name} • {course.category}
-                          </p>
-                          <p className="text-sm text-gray-600 line-clamp-2">
-                            {course.description}
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant={course.is_published ? 'default' : 'secondary'}>
-                            {course.is_published ? 'Published' : 'Draft'}
-                          </Badge>
-                          <Badge className={getDifficultyColor(course.difficulty)}>
-                            {course.difficulty}
-                          </Badge>
-                        </div>
+          <div className="space-y-4">
+            {filteredCourses.map((course) => (
+              <Card key={course.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <BookOpen className="h-5 w-5 text-blue-500" />
+                        <h3 className="text-lg font-semibold">{course.title}</h3>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-6 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4" />
-                            {course.student_count || 0} students
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 text-yellow-500" />
-                            {course.rating || 0}/5
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {course.duration_hours || 0}h
-                          </div>
-                          <div className="text-green-600 font-medium">
-                            ${course.price || 0}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleAIAssist(course.id, 'tag suggestions')}
-                          >
-                            <Bot className="h-4 w-4 text-purple-500" />
-                          </Button>
-                          <Button
-                            variant={course.is_published ? "destructive" : "default"}
-                            size="sm"
-                            onClick={() => handleTogglePublish(course.id, course.is_published)}
-                          >
-                            {course.is_published ? (
-                              <>
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Unpublish
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Publish
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
+                      <p className="text-sm text-gray-600 line-clamp-2">{course.description}</p>
+                      <p className="text-sm text-gray-500 mt-1">by {course.instructor_name}</p>
+                    </div>
+                    <Badge variant={course.is_published ? 'default' : 'secondary'}>
+                      {course.is_published ? 'Published' : 'Draft'}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-6 text-sm text-gray-600">
+                      <span>{course.category}</span>
+                      <span>{course.difficulty}</span>
+                      <span>{course.duration_hours}h</span>
+                      <span>{course.student_count} students</span>
+                      <span>⭐ {course.rating}/5</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={course.is_published ? "destructive" : "default"}
+                        size="sm"
+                        onClick={() => handleTogglePublished(course.id, course.is_published)}
+                      >
+                        {course.is_published ? (
+                          <>
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Unpublish
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Publish
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -345,6 +345,41 @@ export type Database = {
           },
         ]
       }
+      course_interactions: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          interaction_data: Json | null
+          interaction_type: string
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          interaction_data?: Json | null
+          interaction_type: string
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          interaction_data?: Json | null
+          interaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_interactions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_modules: {
         Row: {
           course_id: string | null
@@ -943,6 +978,39 @@ export type Database = {
           level?: number | null
           streak_days?: number | null
           total_xp?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_learning_goals: {
+        Row: {
+          created_at: string
+          id: string
+          learning_objectives: string[] | null
+          preferred_categories: string[] | null
+          preferred_difficulty: string | null
+          target_completion_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          learning_objectives?: string[] | null
+          preferred_categories?: string[] | null
+          preferred_difficulty?: string | null
+          target_completion_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          learning_objectives?: string[] | null
+          preferred_categories?: string[] | null
+          preferred_difficulty?: string | null
+          target_completion_date?: string | null
           updated_at?: string
           user_id?: string
         }
