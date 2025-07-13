@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import HeroSection from '@/components/HeroSection';
 import PopularCategories from '@/components/PopularCategories';
@@ -14,6 +14,7 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   BookOpen, 
   Users, 
@@ -27,12 +28,42 @@ import {
 } from 'lucide-react';
 
 const Index = () => {
-  const stats = [
-    { icon: Users, value: '57,000+', label: 'Active Students' },
-    { icon: BookOpen, value: '340+', label: 'Expert Courses' },
-    { icon: Award, value: '1,247+', label: 'Industry Experts' },
-    { icon: TrendingUp, value: '98%', label: 'Success Rate' }
-  ];
+  const [stats, setStats] = useState({
+    totalStudents: 57000,
+    totalCourses: 340,
+    totalInstructors: 1247,
+    successRate: 98
+  });
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      // Fetch course count
+      const { count: courseCount } = await supabase
+        .from('courses')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_published', true);
+
+      // Fetch total students (sum of student_count from courses)
+      const { data: coursesData } = await supabase
+        .from('courses')
+        .select('student_count')
+        .eq('is_published', true);
+
+      const totalStudents = coursesData?.reduce((sum, course) => sum + (course.student_count || 0), 0) || 57000;
+
+      setStats(prev => ({
+        ...prev,
+        totalCourses: courseCount || prev.totalCourses,
+        totalStudents: totalStudents || prev.totalStudents
+      }));
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
 
   const features = [
     {
@@ -66,15 +97,34 @@ const Index = () => {
       <section className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                  <stat.icon className="h-8 w-8 text-blue-600" />
-                </div>
-                <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
-                <div className="text-gray-600">{stat.label}</div>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <Users className="h-8 w-8 text-blue-600" />
               </div>
-            ))}
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.totalStudents.toLocaleString()}+</div>
+              <div className="text-gray-600">Active Students</div>
+            </div>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <BookOpen className="h-8 w-8 text-blue-600" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.totalCourses}+</div>
+              <div className="text-gray-600">Expert Courses</div>
+            </div>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <Award className="h-8 w-8 text-blue-600" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.totalInstructors}+</div>
+              <div className="text-gray-600">Industry Experts</div>
+            </div>
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+                <TrendingUp className="h-8 w-8 text-blue-600" />
+              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-2">{stats.successRate}%</div>
+              <div className="text-gray-600">Success Rate</div>
+            </div>
           </div>
         </div>
       </section>

@@ -1506,6 +1506,27 @@ export type Database = {
           },
         ]
       }
+      test_table: {
+        Row: {
+          created_at: string
+          email: string
+          id: number
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: never
+          name: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: never
+          name?: string
+        }
+        Relationships: []
+      }
       user_gamification: {
         Row: {
           badges: string[] | null

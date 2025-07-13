@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, Users, Star, Play } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CourseGridProps {
   searchQuery: string;
@@ -16,169 +17,126 @@ interface CourseGridProps {
   };
 }
 
+interface Course {
+  id: string;
+  title: string;
+  short_description: string;
+  category: string;
+  difficulty: string;
+  duration_hours: number;
+  student_count: number;
+  rating: number;
+  thumbnail_url: string;
+  tags: string[];
+  price: number;
+  is_free: boolean;
+  has_certification: boolean;
+}
+
 const CourseGrid: React.FC<CourseGridProps> = ({ searchQuery, filters }) => {
-  // Mock course data - in a real app, this would come from an API
-  const courses = [
-    {
-      id: 1,
-      title: 'AI Fundamentals & Machine Learning',
-      description: 'Master the basics of artificial intelligence and machine learning with hands-on projects.',
-      category: 'Artificial Intelligence',
-      difficulty: 'Beginner',
-      duration: '10-20 hours',
-      company: 'Google',
-      rating: 4.8,
-      studentsCount: 15420,
-      price: 'Free',
-      thumbnail: '/placeholder.svg',
-      certification: true,
-      tags: ['Python', 'TensorFlow', 'Neural Networks']
-    },
-    {
-      id: 2,
-      title: 'DevOps with Docker & Kubernetes',
-      description: 'Learn container orchestration and modern DevOps practices.',
-      category: 'DevOps & Cloud',
-      difficulty: 'Intermediate',
-      duration: '20+ hours',
-      company: 'AWS',
-      rating: 4.9,
-      studentsCount: 8930,
-      price: 'Free',
-      thumbnail: '/placeholder.svg',
-      certification: true,
-      tags: ['Docker', 'Kubernetes', 'CI/CD']
-    },
-    {
-      id: 3,
-      title: 'Full-Stack Web Development',
-      description: 'Build modern web applications with React, Node.js, and MongoDB.',
-      category: 'Web Development',
-      difficulty: 'Intermediate',
-      duration: '20+ hours',
-      company: 'Meta',
-      rating: 4.7,
-      studentsCount: 12340,
-      price: 'Free',
-      thumbnail: '/placeholder.svg',
-      certification: true,
-      tags: ['React', 'Node.js', 'MongoDB']
-    },
-    {
-      id: 4,
-      title: 'Data Science with Python',
-      description: 'Analyze data and build predictive models using Python and popular libraries.',
-      category: 'Data Science',
-      difficulty: 'Beginner',
-      duration: '10-20 hours',
-      company: 'Microsoft',
-      rating: 4.6,
-      studentsCount: 9876,
-      price: 'Free',
-      thumbnail: '/placeholder.svg',
-      certification: false,
-      tags: ['Python', 'Pandas', 'Matplotlib']
-    },
-    {
-      id: 5,
-      title: 'Cybersecurity Essentials',
-      description: 'Learn the fundamentals of cybersecurity and ethical hacking.',
-      category: 'Cybersecurity',
-      difficulty: 'Beginner',
-      duration: '2-10 hours',
-      company: 'Nvidia',
-      rating: 4.5,
-      studentsCount: 6543,
-      price: 'Free',
-      thumbnail: '/placeholder.svg',
-      certification: true,
-      tags: ['Security', 'Ethical Hacking', 'Network Security']
-    },
-    {
-      id: 6,
-      title: 'Blockchain Development',
-      description: 'Build decentralized applications on Ethereum and other blockchains.',
-      category: 'Blockchain',
-      difficulty: 'Advanced',
-      duration: '20+ hours',
-      company: 'OpenAI',
-      rating: 4.8,
-      studentsCount: 4321,
-      price: 'Free',
-      thumbnail: '/placeholder.svg',
-      certification: true,
-      tags: ['Solidity', 'Ethereum', 'Smart Contracts']
-    }
-  ];
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filter courses based on search query and filters
-  const filteredCourses = courses.filter(course => {
-    // Search query filter
-    if (searchQuery && !course.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !course.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !course.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))) {
-      return false;
-    }
+  useEffect(() => {
+    fetchCourses();
+  }, [searchQuery, filters]);
 
-    // Category filter
-    if (filters.categories.length > 0 && !filters.categories.includes(course.category)) {
-      return false;
-    }
+  const fetchCourses = async () => {
+    try {
+      let query = supabase
+        .from('courses')
+        .select('*')
+        .eq('is_published', true);
 
-    // Difficulty filter
-    if (filters.difficulty.length > 0 && !filters.difficulty.includes(course.difficulty)) {
-      return false;
-    }
+      // Apply search filter
+      if (searchQuery) {
+        query = query.or(`title.ilike.%${searchQuery}%,short_description.ilike.%${searchQuery}%`);
+      }
 
-    // Duration filter
-    if (filters.duration.length > 0 && !filters.duration.includes(course.duration)) {
-      return false;
-    }
+      // Apply category filter
+      if (filters.categories.length > 0) {
+        query = query.in('category', filters.categories);
+      }
 
-    // Company filter
-    if (filters.company.length > 0 && !filters.company.includes(course.company)) {
-      return false;
-    }
+      // Apply difficulty filter
+      if (filters.difficulty.length > 0) {
+        query = query.in('difficulty', filters.difficulty);
+      }
 
-    // Certification filter
-    if (filters.certification && !course.certification) {
-      return false;
-    }
+      // Apply certification filter
+      if (filters.certification) {
+        query = query.eq('has_certification', true);
+      }
 
-    return true;
-  });
+      const { data, error } = await query.order('student_count', { ascending: false });
+
+      if (error) throw error;
+
+      let filteredCourses = data || [];
+
+      // Apply duration filter (client-side since it's range-based)
+      if (filters.duration.length > 0) {
+        filteredCourses = filteredCourses.filter(course => {
+          return filters.duration.some(duration => {
+            switch (duration) {
+              case '2-10 hours':
+                return course.duration_hours >= 2 && course.duration_hours <= 10;
+              case '10-20 hours':
+                return course.duration_hours > 10 && course.duration_hours <= 20;
+              case '20+ hours':
+                return course.duration_hours > 20;
+              default:
+                return true;
+            }
+          });
+        });
+      }
+
+      setCourses(filteredCourses);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-xl font-semibold mb-2">Loading courses...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
-      {/* Results Header */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">
-          {filteredCourses.length} Course{filteredCourses.length !== 1 ? 's' : ''} Found
+          {courses.length} Course{courses.length !== 1 ? 's' : ''} Found
         </h2>
         <div className="text-sm text-muted-foreground">
-          Showing all free courses
+          Showing all courses
         </div>
       </div>
 
-      {/* Course Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredCourses.map((course) => (
+        {courses.map((course) => (
           <Card key={course.id} className="group hover:shadow-lg transition-all duration-300 hover-scale">
             <CardHeader className="p-0">
               <div className="relative">
                 <img
-                  src={course.thumbnail}
+                  src={course.thumbnail_url}
                   alt={course.title}
                   className="w-full h-48 object-cover rounded-t-lg"
                 />
                 <div className="absolute top-3 left-3">
                   <Badge variant="secondary" className="bg-white/90 text-foreground">
-                    {course.price}
+                    {course.is_free ? 'Free' : `$${course.price}`}
                   </Badge>
                 </div>
                 <div className="absolute top-3 right-3">
                   <Badge variant="outline" className="bg-white/90">
-                    {course.company}
+                    {course.category}
                   </Badge>
                 </div>
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-t-lg flex items-center justify-center">
@@ -202,7 +160,7 @@ const CourseGrid: React.FC<CourseGridProps> = ({ searchQuery, filters }) => {
                 >
                   {course.difficulty}
                 </Badge>
-                {course.certification && (
+                {course.has_certification && (
                   <Badge variant="outline" className="text-xs">
                     Certificate
                   </Badge>
@@ -214,17 +172,17 @@ const CourseGrid: React.FC<CourseGridProps> = ({ searchQuery, filters }) => {
               </h3>
               
               <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
-                {course.description}
+                {course.short_description}
               </p>
               
               <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
                 <div className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  {course.duration}
+                  {course.duration_hours}h
                 </div>
                 <div className="flex items-center gap-1">
                   <Users className="w-4 h-4" />
-                  {course.studentsCount.toLocaleString()}
+                  {course.student_count.toLocaleString()}
                 </div>
                 <div className="flex items-center gap-1">
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
@@ -233,7 +191,7 @@ const CourseGrid: React.FC<CourseGridProps> = ({ searchQuery, filters }) => {
               </div>
               
               <div className="flex flex-wrap gap-1 mb-3">
-                {course.tags.slice(0, 3).map((tag) => (
+                {course.tags?.slice(0, 3).map((tag) => (
                   <Badge key={tag} variant="outline" className="text-xs">
                     {tag}
                   </Badge>
@@ -250,8 +208,7 @@ const CourseGrid: React.FC<CourseGridProps> = ({ searchQuery, filters }) => {
         ))}
       </div>
 
-      {/* No Results */}
-      {filteredCourses.length === 0 && (
+      {courses.length === 0 && (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
           <h3 className="text-xl font-semibold mb-2">No courses found</h3>

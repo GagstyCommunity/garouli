@@ -1,53 +1,65 @@
 
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Clock, Users, Star, BookOpen } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-const featuredCourses = [
-  {
-    id: 1,
-    title: 'Complete AI Engineering Bootcamp',
-    description: 'Master machine learning, neural networks, and AI deployment with hands-on projects.',
-    category: 'AI/ML',
-    level: 'Beginner to Expert',
-    duration: '12 weeks',
-    students: 1250,
-    rating: 4.9,
-    sponsor: 'Google Cloud',
-    image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=400&h=225&q=80',
-    tags: ['Python', 'TensorFlow', 'PyTorch', 'MLOps'],
-  },
-  {
-    id: 2,
-    title: 'DevOps Master Class',
-    description: 'Learn Docker, Kubernetes, CI/CD, and cloud deployment strategies.',
-    category: 'DevOps',
-    level: 'Intermediate',
-    duration: '8 weeks',
-    students: 890,
-    rating: 4.8,
-    sponsor: 'AWS',
-    image: 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?auto=format&fit=crop&w=400&h=225&q=80',
-    tags: ['Docker', 'Kubernetes', 'AWS', 'Jenkins'],
-  },
-  {
-    id: 3,
-    title: 'Full-Stack Development with AI',
-    description: 'Build modern web applications integrated with AI capabilities.',
-    category: 'Web Development',
-    level: 'Intermediate',
-    duration: '10 weeks',
-    students: 2100,
-    rating: 4.9,
-    sponsor: 'Microsoft',
-    image: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?auto=format&fit=crop&w=400&h=225&q=80',
-    tags: ['React', 'Node.js', 'OpenAI', 'MongoDB'],
-  },
-];
+interface Course {
+  id: string;
+  title: string;
+  short_description: string;
+  category: string;
+  difficulty: string;
+  duration_hours: number;
+  student_count: number;
+  rating: number;
+  thumbnail_url: string;
+  tags: string[];
+  price: number;
+  is_free: boolean;
+}
 
 const FeaturedCourses = () => {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchFeaturedCourses();
+  }, []);
+
+  const fetchFeaturedCourses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('is_published', true)
+        .order('rating', { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+      setCourses(data || []);
+    } catch (error) {
+      console.error('Error fetching featured courses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Loading Featured Courses...</h2>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-20 bg-background">
       <div className="container mx-auto px-4">
@@ -61,11 +73,11 @@ const FeaturedCourses = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {featuredCourses.map((course) => (
+          {courses.map((course) => (
             <Card key={course.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-card to-card/50 hover-scale">
               <div className="relative overflow-hidden rounded-t-lg">
                 <img 
-                  src={course.image} 
+                  src={course.thumbnail_url} 
                   alt={course.title}
                   className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
                 />
@@ -76,7 +88,7 @@ const FeaturedCourses = () => {
                 </div>
                 <div className="absolute top-4 right-4">
                   <Badge variant="outline" className="bg-white/90 border-0">
-                    {course.level}
+                    {course.difficulty}
                   </Badge>
                 </div>
               </div>
@@ -86,20 +98,19 @@ const FeaturedCourses = () => {
                   {course.title}
                 </CardTitle>
                 <CardDescription className="text-sm">
-                  {course.description}
+                  {course.short_description}
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-4">
-                {/* Course Stats */}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <div className="flex items-center">
                     <Clock size={14} className="mr-1" />
-                    {course.duration}
+                    {course.duration_hours}h
                   </div>
                   <div className="flex items-center">
                     <Users size={14} className="mr-1" />
-                    {course.students.toLocaleString()}
+                    {course.student_count.toLocaleString()}
                   </div>
                   <div className="flex items-center">
                     <Star size={14} className="mr-1 text-yellow-400 fill-current" />
@@ -107,27 +118,24 @@ const FeaturedCourses = () => {
                   </div>
                 </div>
 
-                {/* Tags */}
                 <div className="flex flex-wrap gap-1">
-                  {course.tags.slice(0, 3).map((tag) => (
+                  {course.tags?.slice(0, 3).map((tag) => (
                     <Badge key={tag} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
                   ))}
-                  {course.tags.length > 3 && (
+                  {course.tags && course.tags.length > 3 && (
                     <Badge variant="outline" className="text-xs">
                       +{course.tags.length - 3}
                     </Badge>
                   )}
                 </div>
 
-                {/* Sponsor */}
                 <div className="text-xs text-muted-foreground">
-                  Sponsored by <span className="font-medium text-foreground">{course.sponsor}</span>
+                  Sponsored by <span className="font-medium text-foreground">Garouli</span>
                 </div>
 
-                {/* Action Button */}
-                <Link to={`/course/${course.id}`}>
+                <Link to={`/courses/${course.id}`}>
                   <Button className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90">
                     <BookOpen size={16} className="mr-2" />
                     Start Learning
