@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Layers, Plus, Search, Edit, Trash2, DragHandleDots2Icon, Video, FileText, HelpCircle } from 'lucide-react';
+import { Layers, Plus, Search, Edit, Trash2, GripVertical, Video, FileText, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Module {
@@ -122,7 +121,7 @@ const ModuleManagement = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        <DragHandleDots2Icon className="h-4 w-4 text-gray-400 cursor-move" />
+                        <GripVertical className="h-4 w-4 text-gray-400 cursor-move" />
                         <Layers className="h-5 w-5 text-blue-500" />
                         <h3 className="text-lg font-semibold">{module.title}</h3>
                         <Badge className={getStatusColor(module.status)}>
@@ -180,7 +179,7 @@ const ModuleManagement = () => {
                         {getModuleLessons(module.id).map((lesson) => (
                           <div key={lesson.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div className="flex items-center gap-2">
-                              <DragHandleDots2Icon className="h-3 w-3 text-gray-400 cursor-move" />
+                              <GripVertical className="h-3 w-3 text-gray-400 cursor-move" />
                               {getLessonIcon(lesson.type)}
                               <span className="text-sm font-medium">{lesson.title}</span>
                               <Badge variant="secondary" className="text-xs">
