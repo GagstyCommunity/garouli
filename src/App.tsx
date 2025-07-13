@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Index from './pages/Index';
 import Auth from './pages/Auth';
+import AdminAuth from './pages/AdminAuth';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import CourseDetail from './pages/CourseDetail';
@@ -17,8 +18,8 @@ import AgencyDetail from './pages/AgencyDetail';
 import Battle from './pages/Battle';
 import Codex from './pages/Codex';
 import AdminPanel from './pages/AdminPanel';
-import NotFound from './pages/NotFound';
 import GarouliAdminPanel from './pages/GarouliAdminPanel';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/admin/auth" element={<AdminAuth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/courses/:id" element={<CourseDetail />} />
