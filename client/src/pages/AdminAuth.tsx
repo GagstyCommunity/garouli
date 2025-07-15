@@ -18,8 +18,10 @@ const AdminAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const { isAdmin } = useAuth();
+
   // Redirect if already logged in as admin
-  if (user?.user_metadata?.role === 'admin' || user?.user_metadata?.role === 'superadmin') {
+  if (user && isAdmin()) {
     return <Navigate to="/manage/admin" />;
   }
 
@@ -134,9 +136,16 @@ const AdminAuth = () => {
               <p className="text-sm text-muted-foreground">
                 Test Admin Credentials:
               </p>
-              <div className="bg-gray-50 p-3 rounded-lg text-xs">
-                <div><strong>Email:</strong> admin@garouli.com</div>
-                <div><strong>Password:</strong> Create via signup first</div>
+              <div className="bg-gray-50 p-3 rounded-lg text-xs space-y-2">
+                <div>
+                  <strong>Admin:</strong> admin@garouli.com / admin123
+                </div>
+                <div>
+                  <strong>Super Admin:</strong> superadmin@garouli.com / admin123
+                </div>
+                <div>
+                  <strong>Moderator:</strong> moderator@garouli.com / admin123
+                </div>
               </div>
             </div>
           </div>

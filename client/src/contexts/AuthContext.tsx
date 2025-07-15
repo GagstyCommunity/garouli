@@ -15,6 +15,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (data: any) => Promise<{ error: any }>;
   hasRole: (role: string) => boolean;
+  isAdmin: () => boolean;
   refreshUserData: () => Promise<void>;
 }
 
@@ -38,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserData = async (userId: string) => {
     try {
-      // Fetch user role
+      // Fetch user role from user_roles table
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
@@ -47,6 +48,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (roleData) {
         setUserRole(roleData.role);
+      }
+
+      // Check if user is admin
+      const { data: adminData } = await supabase
+        .from('admins')
+        .select('role, is_active')
+        .eq('user_id', userId)
+        .single();
+
+      if (adminData && adminData.is_active) {
+        setUserRole(adminData.role);
       }
 
       // Fetch user profile
@@ -217,6 +229,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return userRole === role;
   };
 
+  const isAdmin = () => {
+    return userRole === 'admin' || userRole === 'superadmin' || userRole === 'moderator';
+  };
+
   const value = {
     user,
     session,
@@ -228,6 +244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut,
     updateProfile,
     hasRole,
+    isAdmin,
     refreshUserData,
   };
 

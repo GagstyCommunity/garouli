@@ -23,6 +23,7 @@ import AILogs from '@/components/admin/AILogs';
 import CommunityManagement from '@/components/admin/CommunityManagement';
 import EventManagement from '@/components/admin/EventManagement';
 import InstructorManagement from '@/components/admin/InstructorManagement';
+import CategoryManagement from '@/components/admin/CategoryManagement';
 import AgencyManagement from '@/components/admin/AgencyManagement';
 import ModeratorDashboard from '@/components/admin/ModeratorDashboard';
 import AIContentGenerator from '@/components/admin/AIContentGenerator';
@@ -37,14 +38,16 @@ const GarouliAdminPanel = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  const { isAdmin } = useAuth();
+  
   // Check if user has admin role
-  const isAdmin = user?.user_metadata?.role === 'admin' || user?.user_metadata?.role === 'superadmin';
+  const hasAdminAccess = isAdmin();
 
   if (!user) {
     return <Navigate to="/auth" />;
   }
 
-  if (!isAdmin) {
+  if (!hasAdminAccess) {
     return <Navigate to="/dashboard" />;
   }
 
@@ -59,6 +62,7 @@ const GarouliAdminPanel = () => {
     { id: 'admin-roles', label: 'Admin Roles', icon: Shield, component: AdminRoles, category: 'users' },
     
     // Course & Content Management
+    { id: 'categories', label: 'Categories', icon: Layers, component: CategoryManagement, category: 'content' },
     { id: 'courses', label: 'Courses', icon: BookOpen, component: CourseManagement, category: 'content' },
     { id: 'modules', label: 'Modules', icon: Layers, component: ModuleManagement, category: 'content' },
     { id: 'exams', label: 'Exams', icon: ClipboardCheck, component: ExamManagement, category: 'content' },

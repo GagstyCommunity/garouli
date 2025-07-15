@@ -35,14 +35,16 @@ const AdminPanel = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // Check if user has admin role (simplified check)
-  const isAdmin = user?.user_metadata?.role === 'admin';
+  const { isAdmin } = useAuth();
+  
+  // Check if user has admin role
+  const hasAdminAccess = isAdmin();
 
   if (!user) {
     return <Navigate to="/auth" />;
   }
 
-  if (!isAdmin) {
+  if (!hasAdminAccess) {
     return <Navigate to="/dashboard" />;
   }
 
