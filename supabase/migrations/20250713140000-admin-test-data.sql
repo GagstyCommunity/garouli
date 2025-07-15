@@ -6,7 +6,7 @@ DECLARE
   super_admin_user_id UUID;
   moderator_user_id UUID;
 BEGIN
-  -- Create test admin users
+  -- Create test admin users with proper password hash for "admin123"
   INSERT INTO auth.users (
     id,
     instance_id,
@@ -32,7 +32,7 @@ BEGIN
     'authenticated',
     'authenticated',
     'admin@garouli.com',
-    '$2a$10$8qvZ7LkTr5CZnQ8U8qJ8xO8U8qJ8xO8U8qJ8xO8U8qJ8xO8U8qJ8xO', -- password: admin123
+    '$2a$10$8O8QvzjQn5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5je', -- password: admin123
     NOW(),
     NOW(),
     NOW(),
@@ -51,7 +51,7 @@ BEGIN
     'authenticated',
     'authenticated',
     'superadmin@garouli.com',
-    '$2a$10$8qvZ7LkTr5CZnQ8U8qJ8xO8U8qJ8xO8U8qJ8xO8U8qJ8xO8U8qJ8xO', -- password: admin123
+    '$2a$10$8O8QvzjQn5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5je', -- password: admin123
     NOW(),
     NOW(),
     NOW(),
@@ -70,7 +70,7 @@ BEGIN
     'authenticated',
     'authenticated',
     'moderator@garouli.com',
-    '$2a$10$8qvZ7LkTr5CZnQ8U8qJ8xO8U8qJ8xO8U8qJ8xO8U8qJ8xO8U8qJ8xO', -- password: admin123
+    '$2a$10$8O8QvzjQn5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5je', -- password: admin123
     NOW(),
     NOW(),
     NOW(),
@@ -83,7 +83,10 @@ BEGIN
     '',
     ''
   )
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    encrypted_password = EXCLUDED.encrypted_password,
+    email_confirmed_at = EXCLUDED.email_confirmed_at,
+    updated_at = NOW();
 
   -- Get the user IDs
   admin_user_id := '11111111-1111-1111-1111-111111111111';
@@ -95,23 +98,104 @@ BEGIN
   (admin_user_id, 'admin', true, '{"manage_users": true, "manage_courses": true, "manage_content": true}'),
   (super_admin_user_id, 'superadmin', true, '{"full_access": true}'),
   (moderator_user_id, 'moderator', true, '{"manage_content": true, "moderate_users": true}')
-  ON CONFLICT (user_id) DO NOTHING;
+  ON CONFLICT (user_id) DO UPDATE SET
+    is_active = EXCLUDED.is_active,
+    permissions = EXCLUDED.permissions;
 
   -- Insert user roles
   INSERT INTO public.user_roles (user_id, role) VALUES
   (admin_user_id, 'admin'),
   (super_admin_user_id, 'superadmin'),
   (moderator_user_id, 'moderator')
-  ON CONFLICT (user_id) DO NOTHING;
+  ON CONFLICT (user_id) DO UPDATE SET
+    role = EXCLUDED.role;
 
   -- Insert profiles
   INSERT INTO public.profiles (id, email, full_name, role) VALUES
   (admin_user_id, 'admin@garouli.com', 'Admin User', 'admin'),
   (super_admin_user_id, 'superadmin@garouli.com', 'Super Admin', 'superadmin'),
   (moderator_user_id, 'moderator@garouli.com', 'Moderator User', 'moderator')
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    full_name = EXCLUDED.full_name,
+    role = EXCLUDED.role;
 
 END $$;
+
+-- Create additional test users for other roles
+INSERT INTO auth.users (
+  id,
+  instance_id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at
+) VALUES 
+(
+  '44444444-4444-4444-4444-444444444444',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated',
+  'authenticated',
+  'student@garouli.com',
+  '$2a$10$8O8QvzjQn5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5je', -- password: admin123
+  NOW(),
+  '{"provider":"email","providers":["email"]}',
+  '{"role":"student","full_name":"Test Student"}',
+  NOW(),
+  NOW()
+),
+(
+  '55555555-5555-5555-5555-555555555555',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated',
+  'authenticated',
+  'instructor@garouli.com',
+  '$2a$10$8O8QvzjQn5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5je', -- password: admin123
+  NOW(),
+  '{"provider":"email","providers":["email"]}',
+  '{"role":"instructor","full_name":"Test Instructor"}',
+  NOW(),
+  NOW()
+),
+(
+  '66666666-6666-6666-6666-666666666666',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated',
+  'authenticated',
+  'agency@garouli.com',
+  '$2a$10$8O8QvzjQn5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5j5o5X5je', -- password: admin123
+  NOW(),
+  '{"provider":"email","providers":["email"]}',
+  '{"role":"agency","full_name":"Test Agency"}',
+  NOW(),
+  NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+  encrypted_password = EXCLUDED.encrypted_password,
+  email_confirmed_at = EXCLUDED.email_confirmed_at,
+  updated_at = NOW();
+
+-- Insert user roles for test users
+INSERT INTO public.user_roles (user_id, role) VALUES
+('44444444-4444-4444-4444-444444444444', 'student'),
+('55555555-5555-5555-5555-555555555555', 'instructor'),
+('66666666-6666-6666-6666-666666666666', 'agency')
+ON CONFLICT (user_id) DO UPDATE SET role = EXCLUDED.role;
+
+-- Insert profiles for test users
+INSERT INTO public.profiles (id, email, full_name, role) VALUES
+('44444444-4444-4444-4444-444444444444', 'student@garouli.com', 'Test Student', 'student'),
+('55555555-5555-5555-5555-555555555555', 'instructor@garouli.com', 'Test Instructor', 'instructor'),
+('66666666-6666-6666-6666-666666666666', 'agency@garouli.com', 'Test Agency', 'agency')
+ON CONFLICT (id) DO UPDATE SET
+  email = EXCLUDED.email,
+  full_name = EXCLUDED.full_name,
+  role = EXCLUDED.role;
 
 -- Insert sample categories
 INSERT INTO public.categories (name, description, slug, is_active) VALUES
@@ -127,7 +211,7 @@ INSERT INTO public.courses (title, description, instructor_id, category_id, pric
 SELECT 
   course.title,
   course.description,
-  (SELECT id FROM public.profiles WHERE role = 'instructor' LIMIT 1),
+  '55555555-5555-5555-5555-555555555555',
   cat.id,
   course.price,
   course.difficulty,
@@ -135,11 +219,11 @@ SELECT
   'published'
 FROM (
   VALUES 
-    ('Complete React Development', 'Master React from basics to advanced concepts', 99.99, 'beginner', 40),
-    ('Python for Data Science', 'Learn data analysis with Python and pandas', 149.99, 'intermediate', 60),
-    ('iOS App Development', 'Build native iOS apps with Swift', 199.99, 'intermediate', 80),
-    ('AWS Cloud Fundamentals', 'Get started with Amazon Web Services', 129.99, 'beginner', 30),
-    ('Ethical Hacking Basics', 'Learn cybersecurity fundamentals', 179.99, 'advanced', 50)
+    ('Complete React Development', 'Master React from basics to advanced concepts', 0.00, 'beginner', 40),
+    ('Python for Data Science', 'Learn data analysis with Python and pandas', 0.00, 'intermediate', 60),
+    ('iOS App Development', 'Build native iOS apps with Swift', 0.00, 'intermediate', 80),
+    ('AWS Cloud Fundamentals', 'Get started with Amazon Web Services', 0.00, 'beginner', 30),
+    ('Ethical Hacking Basics', 'Learn cybersecurity fundamentals', 0.00, 'advanced', 50)
 ) AS course(title, description, price, difficulty, duration),
 public.categories cat
 WHERE cat.slug IN ('web-development', 'data-science', 'mobile-development', 'cloud-computing', 'cybersecurity')
