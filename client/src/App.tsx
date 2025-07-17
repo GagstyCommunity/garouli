@@ -28,7 +28,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-background font-sans antialiased">
+        <div className="min-h-screen bg-background font-sans antialiased w-full">
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />

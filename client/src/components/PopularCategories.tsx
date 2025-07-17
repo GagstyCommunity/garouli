@@ -106,8 +106,8 @@ const PopularCategories = () => {
   ];
 
   return (
-    <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
+    <section className="py-8 sm:py-16 bg-white">
+      <div className="container mx-auto px-2 sm:px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-gray-900 mb-4">
             Popular Categories
@@ -117,7 +117,7 @@ const PopularCategories = () => {
           </p>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
           {categories.map((category, index) => (
             <Card 
               key={index} 

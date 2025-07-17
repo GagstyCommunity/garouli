@@ -59,7 +59,7 @@ const HeroSection = () => {
       <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-yellow-400/10 to-orange-500/10 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/10 to-purple-600/10 rounded-full blur-3xl transform translate-x-1/2 translate-y-1/2"></div>
       
-      <div className="relative container mx-auto px-4 py-20 lg:py-32">
+      <div className="relative container mx-auto px-2 sm:px-4 py-12 sm:py-20 lg:py-32">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             {/* Badge */}
@@ -99,24 +99,24 @@ const HeroSection = () => {
           </div>
 
           {/* Search Bar */}
-          <div className="max-w-2xl mx-auto mb-8">
+          <div className="max-w-2xl mx-auto mb-8 px-2">
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                <Search className="h-6 w-6 text-gray-400" />
+              <div className="absolute inset-y-0 left-0 pl-3 sm:pl-6 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
               </div>
               <Input
                 type="text"
-                placeholder="What do you want to learn? Try 'AI Tools', 'Web Development'..."
+                placeholder="What do you want to learn?"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={handleKeyPress}
-                className="w-full pl-14 pr-32 py-6 text-lg border-2 border-gray-200 rounded-2xl focus:border-yellow-500 focus:ring-yellow-500 shadow-lg bg-white/80 backdrop-blur-sm"
+                className="w-full pl-10 sm:pl-14 pr-20 sm:pr-32 py-4 sm:py-6 text-base sm:text-lg border-2 border-gray-200 rounded-2xl focus:border-yellow-500 focus:ring-yellow-500 shadow-lg bg-white/80 backdrop-blur-sm"
               />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:pr-3">
                 <Button 
                   onClick={handleSearch}
-                  size="lg"
-                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold px-8 rounded-xl"
+                  size="sm"
+                  className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold px-4 sm:px-8 rounded-xl text-sm sm:text-base"
                 >
                   Search
                 </Button>
