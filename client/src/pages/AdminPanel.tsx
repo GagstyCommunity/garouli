@@ -32,10 +32,8 @@ import {
 } from 'lucide-react';
 
 const AdminPanel = () => {
-  const { user } = useAuth();
+  const { user, isAdminSync } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
-
-  const { isAdminSync } = useAuth();
   
   // Check if user has admin role
   const hasAdminAccess = isAdminSync();

@@ -11,14 +11,12 @@ import { Shield, Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AdminAuth = () => {
-  const { user, signIn } = useAuth();
+  const { user, signIn, isAdminSync } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const { isAdminSync } = useAuth();
 
   // Redirect if already logged in as admin
   if (user && isAdminSync()) {
