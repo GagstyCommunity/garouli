@@ -15,8 +15,11 @@ import {
   Award,
   TrendingUp,
   Calendar,
-  Zap
+  Zap,
+  Code,
+  Video
 } from 'lucide-react';
+import ChallengeSystem from './gamification/ChallengeSystem';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -327,6 +330,9 @@ const GamifiedProgress = () => {
         </CardContent>
       </Card>
 
+      {/* Daily Challenges */}
+      <ChallengeSystem />
+
       {/* Quick Actions */}
       <Card>
         <CardHeader>
@@ -342,12 +348,12 @@ const GamifiedProgress = () => {
               <span className="text-sm">Continue Learning</span>
             </Button>
             <Button variant="outline" className="flex flex-col items-center gap-2 h-auto py-4">
-              <Users className="h-6 w-6" />
-              <span className="text-sm">Find Study Group</span>
+              <Video className="h-6 w-6" />
+              <span className="text-sm">Join Study Room</span>
             </Button>
             <Button variant="outline" className="flex flex-col items-center gap-2 h-auto py-4">
-              <Target className="h-6 w-6" />
-              <span className="text-sm">Set Goals</span>
+              <Code className="h-6 w-6" />
+              <span className="text-sm">Peer Review</span>
             </Button>
             <Button variant="outline" className="flex flex-col items-center gap-2 h-auto py-4">
               <TrendingUp className="h-6 w-6" />

@@ -10,6 +10,8 @@ import { useQuery } from "@tanstack/react-query";
 import RecommendationEngine from "@/components/RecommendationEngine";
 import GamifiedProgress from "@/components/GamifiedProgress";
 import AIStudyCompanion from "@/components/AIStudyCompanion";
+import PeerReviewSystem from "@/components/social/PeerReviewSystem";
+import StudyRooms from "@/components/social/StudyRooms";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Dashboard = () => {
@@ -58,10 +60,12 @@ const Dashboard = () => {
             <StudentDashboard />
             
             <Tabs defaultValue="recommendations" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
                 <TabsTrigger value="progress">Progress</TabsTrigger>
                 <TabsTrigger value="ai-companion">AI Companion</TabsTrigger>
+                <TabsTrigger value="peer-review">Peer Review</TabsTrigger>
+                <TabsTrigger value="study-rooms">Study Rooms</TabsTrigger>
               </TabsList>
               
               <TabsContent value="recommendations" className="space-y-6">
@@ -74,6 +78,14 @@ const Dashboard = () => {
               
               <TabsContent value="ai-companion" className="space-y-6">
                 <AIStudyCompanion />
+              </TabsContent>
+              
+              <TabsContent value="peer-review" className="space-y-6">
+                <PeerReviewSystem />
+              </TabsContent>
+              
+              <TabsContent value="study-rooms" className="space-y-6">
+                <StudyRooms />
               </TabsContent>
             </Tabs>
           </div>
