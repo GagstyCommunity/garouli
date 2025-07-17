@@ -18,11 +18,11 @@ const AdminAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { isAdmin } = useAuth();
+  const { isAdminSync } = useAuth();
 
   // Redirect if already logged in as admin
-  if (user && isAdmin()) {
-    return <Navigate to="/manage/admin" />;
+  if (user && isAdminSync()) {
+    return <Navigate to="/admin" />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

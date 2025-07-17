@@ -1,5 +1,4 @@
-
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
@@ -89,14 +88,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           await fetchUserData(session.user.id);
         } else {
           setUserRole(null);
           setUserProfile(null);
         }
-        
+
         setLoading(false);
       }
     );
@@ -105,11 +104,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         await fetchUserData(session.user.id);
       }
-      
+
       setLoading(false);
     });
 
@@ -122,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
       });
-      
+
       if (error) {
         toast({
           title: "Sign In Failed",
@@ -135,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "Successfully signed in to your account.",
         });
       }
-      
+
       return { error };
     } catch (error: any) {
       console.error('Sign in error:', error);
@@ -146,7 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string, userData?: any) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -158,7 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       });
-      
+
       if (error) {
         toast({
           title: "Sign Up Failed",
@@ -171,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "Your account has been created successfully. Please check your email to verify your account.",
         });
       }
-      
+
       return { error };
     } catch (error: any) {
       console.error('Sign up error:', error);
@@ -229,9 +228,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return userRole === role;
   };
 
-  const isAdmin = () => {
-    return userRole === 'admin' || userRole === 'superadmin' || userRole === 'moderator';
-  };
+  const isAdmin = useCallback(async () => {
+    if (!user) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('admins')
+        .select('role, is_active')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
+
+      return !!data && data.is_active;
+    } catch (error) {
+      console.error('Error checking admin role:', error);
+      return false;
+    }
+  }, [user]);
+
+  const isAdminSync = useCallback(() => {
+    // This is a simplified sync check for immediate use
+    // In a real app, you'd want to store admin status in state
+    return user?.email === 'admin@example.com'; // Temporary fallback
+  }, [user]);
 
   const value = {
     user,

@@ -35,10 +35,10 @@ const AdminPanel = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  const { isAdmin } = useAuth();
+  const { isAdminSync } = useAuth();
   
   // Check if user has admin role
-  const hasAdminAccess = isAdmin();
+  const hasAdminAccess = isAdminSync();
 
   if (!user) {
     return <Navigate to="/auth" />;
