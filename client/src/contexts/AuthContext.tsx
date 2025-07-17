@@ -15,6 +15,7 @@ interface AuthContextType {
   updateProfile: (data: any) => Promise<{ error: any }>;
   hasRole: (role: string) => boolean;
   isAdmin: () => boolean;
+  isAdminSync: () => boolean;
   refreshUserData: () => Promise<void>;
 }
 
@@ -247,10 +248,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   const isAdminSync = useCallback(() => {
-    // This is a simplified sync check for immediate use
-    // In a real app, you'd want to store admin status in state
-    return user?.email === 'admin@example.com'; // Temporary fallback
-  }, [user]);
+    // Check if user has admin role synchronously
+    return userRole === 'admin' || userRole === 'superadmin' || userRole === 'moderator';
+  }, [userRole]);
 
   const value = {
     user,
@@ -264,6 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateProfile,
     hasRole,
     isAdmin,
+    isAdminSync,
     refreshUserData,
   };
 
